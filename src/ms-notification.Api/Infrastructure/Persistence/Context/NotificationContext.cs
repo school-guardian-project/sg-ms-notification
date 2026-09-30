@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Domain.Model;
+using ms_notification.Api.Infrastructure.Persistence.Configuration;
 
 namespace ms_notification.Api.Infrastructure.Persistence.Context;
 
@@ -14,32 +15,13 @@ public class NotificationContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.HasDefaultSchema("Notification");
 
-        modelBuilder.Entity<AlertType>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).HasMaxLength(30).IsRequired();
-            entity.Property(e => e.Description).HasMaxLength(100).IsRequired();
-        });
-
-        modelBuilder.Entity<Alert>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Description).HasMaxLength(100);
-            entity.HasOne<AlertType>().WithMany().HasForeignKey(e => e.AlertTypeId);
-        });
-
-        modelBuilder.Entity<AlertRecipient>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.HasOne<Alert>().WithMany().HasForeignKey(e => e.AlertId);
-        });
-
-        modelBuilder.Entity<Boarding>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.BoardingType).HasMaxLength(20);
-        });
+        modelBuilder.ApplyConfiguration(new AlertTypeConfiguration());
+        modelBuilder.ApplyConfiguration(new AlertConfiguration());
+        modelBuilder.ApplyConfiguration(new AlertRecipientConfiguration());
+        modelBuilder.ApplyConfiguration(new BoardingConfiguration());
     }
 }

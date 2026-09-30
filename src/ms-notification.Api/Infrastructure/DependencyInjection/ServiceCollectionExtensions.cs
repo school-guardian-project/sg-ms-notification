@@ -26,7 +26,15 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IEventPublisher, KafkaEventPublisher>();
         services.AddScoped<ProcessScanService>();
-        services.AddHttpClient();
+        services.AddScoped<GetGuardianNotificationsService>();
+
+        services.AddHttpClient("ms-user-management", client =>
+        {
+            client.BaseAddress = new Uri(
+                configuration["Services:UserManagement:BaseUrl"]
+                ?? throw new InvalidOperationException(
+                    "Missing Services__UserManagement__BaseUrl (set it in .env)"));
+        });
 
         return services;
     }

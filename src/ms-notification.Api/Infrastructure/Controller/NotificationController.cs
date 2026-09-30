@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ms_notification.Api.Application.Dto;
 using ms_notification.Api.Application.UseCase;
-using ms_notification.Api.Infrastructure.Persistence.Context;
 
 namespace ms_notification.Api.Infrastructure.Controller;
 
@@ -10,12 +9,14 @@ namespace ms_notification.Api.Infrastructure.Controller;
 public class NotificationController : ControllerBase
 {
     private readonly ProcessScanService _processScanService;
-    private readonly NotificationContext _context;
+    private readonly GetGuardianNotificationsService _guardianNotificationsService;
 
-    public NotificationController(ProcessScanService processScanService, NotificationContext context)
+    public NotificationController(
+        ProcessScanService processScanService,
+        GetGuardianNotificationsService guardianNotificationsService)
     {
         _processScanService = processScanService;
-        _context = context;
+        _guardianNotificationsService = guardianNotificationsService;
     }
 
     [HttpPost("scan")]
@@ -26,26 +27,9 @@ public class NotificationController : ControllerBase
     }
 
     [HttpGet("guardian/{profileId}")]
-    public IActionResult GetGuardianNotifications(Guid profileId)
+    public async Task<IActionResult> GetGuardianNotifications(Guid profileId, CancellationToken ct)
     {
-        var notifications = _context.AlertRecipients
-            .Where(ar => ar.ProfileId == profileId)
-            .OrderByDescending(ar => ar.DateTimeRead)
-            .Select(ar => new
-            {
-                ar.Id,
-                ar.AlertId,
-                ar.DateTimeRead,
-                Alert = new
-                {
-                    ar.Alert.Id,
-                    ar.Alert.Description,
-                    ar.Alert.DateTime,
-                    ar.Alert.BoardingType
-                }
-            })
-            .ToList();
-
+        var notifications = await _guardianNotificationsService.ExecuteAsync(profileId, ct);
         return Ok(notifications);
     }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Confluent.Kafka;
+using Microsoft.Extensions.Logging;
 using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Domain.Event;
 using ms_notification.Api.Infrastructure.Persistence.Context;
@@ -10,12 +11,17 @@ public class StudentScannedConsumer : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<StudentScannedConsumer> _logger;
     private IConsumer<string, string>? _consumer;
 
-    public StudentScannedConsumer(IServiceProvider serviceProvider, IConfiguration configuration)
+    public StudentScannedConsumer(
+        IServiceProvider serviceProvider,
+        IConfiguration configuration,
+        ILogger<StudentScannedConsumer> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,7 +68,7 @@ public class StudentScannedConsumer : BackgroundService
             }
             catch (ConsumeException ex)
             {
-                Console.Error.WriteLine($"Kafka consume error: {ex.Error.Reason}");
+                _logger.LogError(ex, "Kafka consume error: {Reason}", ex.Error.Reason);
             }
         }
     }
@@ -73,17 +79,25 @@ public class StudentScannedConsumer : BackgroundService
         {
             using var scope = _serviceProvider.CreateScope();
             var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
-            var client = httpClientFactory.CreateClient();
+            var client = httpClientFactory.CreateClient("ms-user-management");
 
-            var response = await client.GetAsync($"http://ms-user-management:8080/api/v1/families/student/{studentProfileId}");
-            if (!response.IsSuccessStatusCode) return new List<Guid>();
+            var response = await client.GetAsync($"/api/families/student/{studentProfileId}/members");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Failed to fetch family members for student {StudentProfileId}: {StatusCode}",
+                    studentProfileId, response.StatusCode);
+                return new List<Guid>();
+            }
 
             var content = await response.Content.ReadAsStringAsync();
-            var familyMembers = System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(content);
-            return familyMembers ?? new List<Guid>();
+            var members = JsonSerializer.Deserialize<List<FamilyMemberResponse>>(content);
+
+            return members?.Select(m => m.ProfileId).ToList() ?? new List<Guid>();
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error fetching family members for student {StudentProfileId}", studentProfileId);
             return new List<Guid>();
         }
     }
@@ -93,5 +107,10 @@ public class StudentScannedConsumer : BackgroundService
         _consumer?.Close();
         _consumer?.Dispose();
         base.Dispose();
+    }
+
+    private class FamilyMemberResponse
+    {
+        public Guid ProfileId { get; set; }
     }
 }
