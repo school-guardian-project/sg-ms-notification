@@ -26,6 +26,19 @@ public class ProcessScanService
             throw new InvalidOperationException("Student not assigned to this route");
         }
 
+        if (request.BoardingType == "OFF_BOARD")
+        {
+            var hasActiveBoarding = _context.Boardings.Any(b =>
+                b.ProfileId == request.StudentProfileId &&
+                b.RouteExecutionId == request.RouteExecutionId &&
+                b.BoardingType == "ON_BOARD");
+
+            if (!hasActiveBoarding)
+            {
+                throw new InvalidOperationException("No active boarding for the student");
+            }
+        }
+
         var boarding = new Boarding
         {
             Id = Guid.NewGuid(),
