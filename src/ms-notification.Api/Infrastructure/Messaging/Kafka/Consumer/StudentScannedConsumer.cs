@@ -69,7 +69,23 @@ public class StudentScannedConsumer : BackgroundService
 
     private async Task<List<Guid>> GetFamilyMembersAsync(Guid studentProfileId)
     {
-        return await Task.FromResult(new List<Guid>());
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var httpClientFactory = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>();
+            var client = httpClientFactory.CreateClient();
+
+            var response = await client.GetAsync($"http://ms-user-management:8080/api/v1/families/student/{studentProfileId}");
+            if (!response.IsSuccessStatusCode) return new List<Guid>();
+
+            var content = await response.Content.ReadAsStringAsync();
+            var familyMembers = System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(content);
+            return familyMembers ?? new List<Guid>();
+        }
+        catch
+        {
+            return new List<Guid>();
+        }
     }
 
     public override void Dispose()
