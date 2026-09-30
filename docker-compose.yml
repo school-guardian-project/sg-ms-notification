@@ -1,0 +1,17 @@
+services:
+  ms-notification.api:
+    container_name: ms-notification
+    image: ms-notification.api
+    build:
+      context: .
+      dockerfile: src/ms-notification.Api/Dockerfile
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env
+    networks:
+      - sg-services-network
+
+networks:
+  sg-services-network:
+    external: true
