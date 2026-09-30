@@ -10,13 +10,9 @@ COPY ["src/ms-notification.Api/ms-notification.Api.csproj", "src/ms-notification
 RUN dotnet restore "src/ms-notification.Api/ms-notification.Api.csproj"
 COPY . .
 WORKDIR "/src/src/ms-notification.Api"
-RUN dotnet build "./ms-notification.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
-
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./ms-notification.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./ms-notification.Api.csproj" -c $BUILD_CONFIGURATION -o /App/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
-COPY --from=publish /App/publish .
+COPY --from=build /App/publish .
 ENTRYPOINT ["dotnet", "ms-notification.Api.dll"]

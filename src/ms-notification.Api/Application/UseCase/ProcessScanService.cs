@@ -2,6 +2,7 @@ using ms_notification.Api.Application.Dto;
 using ms_notification.Api.Domain.Model;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 using ms_notification.Api.Infrastructure.Messaging.Kafka;
+using ms_notification.Api.Application.Mapper;
 
 namespace ms_notification.Api.Application.UseCase;
 
@@ -44,15 +45,15 @@ public class ProcessScanService
 
         await _context.SaveChangesAsync();
 
-        await _eventPublisher.PublishAsync("student.scanned", new
-        {
-            BoardingId = boarding.Id,
-            AlertId = alert.Id,
-            StudentProfileId = request.StudentProfileId,
-            RouteExecutionId = request.RouteExecutionId,
-            BoardingType = request.BoardingType,
-            Timestamp = DateTime.UtcNow
-        });
+        var eventData = StudentScannedEventMapper.ToEvent(
+            boarding.Id,
+            alert.Id,
+            request.StudentProfileId,
+            request.RouteExecutionId,
+            request.BoardingType
+        );
+
+        await _eventPublisher.PublishAsync("student.scanned", eventData);
 
         return new ScanResponseDto
         {

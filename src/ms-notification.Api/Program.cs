@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddNotificationServices(builder.Configuration);
+builder.Services.AddHostedService<ms_notification.Api.Infrastructure.Messaging.Kafka.Consumer.StudentScannedConsumer>();
 
 var app = builder.Build();
 

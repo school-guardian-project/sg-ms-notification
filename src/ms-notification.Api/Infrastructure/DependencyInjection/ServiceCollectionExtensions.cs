@@ -1,4 +1,5 @@
 using Confluent.Kafka;
+using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.UseCase;
 using ms_notification.Api.Infrastructure.Messaging.Kafka;
 using ms_notification.Api.Infrastructure.Persistence.Context;
