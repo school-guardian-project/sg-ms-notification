@@ -10,15 +10,22 @@ public class ProcessScanService
 {
     private readonly NotificationContext _context;
     private readonly IEventPublisher _eventPublisher;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public ProcessScanService(NotificationContext context, IEventPublisher eventPublisher)
+    public ProcessScanService(NotificationContext context, IEventPublisher eventPublisher, IHttpClientFactory httpClientFactory)
     {
         _context = context;
         _eventPublisher = eventPublisher;
+        _httpClientFactory = httpClientFactory;
     }
 
     public async Task<ScanResponseDto> ExecuteAsync(ScanRequestDto request)
     {
+        if (!await IsStudentAssignedToRouteAsync(request.StudentProfileId, request.RouteExecutionId))
+        {
+            throw new InvalidOperationException("Student not assigned to this route");
+        }
+
         var boarding = new Boarding
         {
             Id = Guid.NewGuid(),
@@ -35,7 +42,7 @@ public class ProcessScanService
         {
             Id = Guid.NewGuid(),
             RouteExecutionId = request.RouteExecutionId,
-            AlertTypeId = 1,
+            AlertTypeId = request.BoardingType == "ON_BOARD" ? (byte)1 : (byte)2,
             ProfileId = request.StudentProfileId,
             DateTime = DateTime.UtcNow,
             Description = request.BoardingType == "ON_BOARD" ? "Estudiante abordó" : "Estudiante descendió"
@@ -61,5 +68,19 @@ public class ProcessScanService
             AlertId = alert.Id,
             ParentsNotified = 0
         };
+    }
+
+    private async Task<bool> IsStudentAssignedToRouteAsync(Guid studentProfileId, Guid routeExecutionId)
+    {
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetAsync($"http://ms-route:8080/api/v1/routes/{routeExecutionId}/students/{studentProfileId}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return true;
+        }
     }
 }

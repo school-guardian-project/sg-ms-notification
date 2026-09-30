@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IEventPublisher, KafkaEventPublisher>();
         services.AddScoped<ProcessScanService>();
+        services.AddHttpClient();
 
         return services;
     }
