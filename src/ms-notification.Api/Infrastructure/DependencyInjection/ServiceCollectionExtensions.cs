@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEventPublisher, KafkaEventPublisher>();
         services.AddScoped<ProcessScanService>();
         services.AddScoped<GetGuardianNotificationsService>();
+        services.AddScoped<RegisterDeviceService>();
 
         services.AddHttpClient("ms-user-management", client =>
         {

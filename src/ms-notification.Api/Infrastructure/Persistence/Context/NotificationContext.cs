@@ -12,6 +12,7 @@ public class NotificationContext : DbContext
     public DbSet<Alert> Alerts { get; set; }
     public DbSet<AlertRecipient> AlertRecipients { get; set; }
     public DbSet<AlertType> AlertTypes { get; set; }
+    public DbSet<DeviceToken> DeviceTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,5 +24,6 @@ public class NotificationContext : DbContext
         modelBuilder.ApplyConfiguration(new AlertConfiguration());
         modelBuilder.ApplyConfiguration(new AlertRecipientConfiguration());
         modelBuilder.ApplyConfiguration(new BoardingConfiguration());
+        modelBuilder.ApplyConfiguration(new DeviceTokenConfiguration());
     }
 }

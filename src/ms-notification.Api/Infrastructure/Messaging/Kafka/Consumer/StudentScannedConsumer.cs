@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Confluent.Kafka;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Domain.Event;
@@ -9,18 +10,23 @@ namespace ms_notification.Api.Infrastructure.Messaging.Kafka.Consumer;
 
 public class StudentScannedConsumer : BackgroundService
 {
+    private const string PushEndpoint = "https://exp.host/--/api/v2/push/send";
+
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<StudentScannedConsumer> _logger;
     private IConsumer<string, string>? _consumer;
 
     public StudentScannedConsumer(
         IServiceProvider serviceProvider,
         IConfiguration configuration,
+        IHttpClientFactory httpClientFactory,
         ILogger<StudentScannedConsumer> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
+        _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
@@ -65,10 +71,68 @@ public class StudentScannedConsumer : BackgroundService
                 }
 
                 await context.SaveChangesAsync();
+
+                try
+                {
+                    var tokens = await GetDeviceTokensAsync(context, familyMembers);
+                    if (tokens.Count > 0)
+                    {
+                        await SendPushAsync(tokens, alert.Description);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Could not push the notification for alert {AlertId}", data.AlertId);
+                }
             }
             catch (ConsumeException ex)
             {
                 _logger.LogError(ex, "Kafka consume error: {Reason}", ex.Error.Reason);
+            }
+        }
+    }
+
+    private async Task<List<string>> GetDeviceTokensAsync(NotificationContext context, List<Guid> profileIds)
+    {
+        if (profileIds.Count == 0)
+        {
+            return new List<string>();
+        }
+
+        return await context.DeviceTokens
+            .AsNoTracking()
+            .Where(t => profileIds.Contains(t.ProfileId))
+            .Select(t => t.ExpoToken)
+            .Distinct()
+            .ToListAsync();
+    }
+
+    private async Task SendPushAsync(IReadOnlyCollection<string> tokens, string? body)
+    {
+        var client = _httpClientFactory.CreateClient();
+
+        foreach (var token in tokens)
+        {
+            try
+            {
+                var payload = JsonSerializer.Serialize(new
+                {
+                    to = token,
+                    title = "Notificación de ruta",
+                    body = body ?? string.Empty,
+                    sound = "default"
+                });
+
+                var response = await client.PostAsync(PushEndpoint, new StringContent(payload, "application/json"));
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("Expo push returned {StatusCode} for token {Token}", response.StatusCode, token);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not deliver the push notification to {Token}", token);
             }
         }
     }
