@@ -5,6 +5,7 @@ public class GuardianNotificationDto
     public Guid Id { get; set; }
     public Guid AlertId { get; set; }
     public DateTime DateTimeRead { get; set; }
+    public string? BoardingType { get; set; }
     public AlertDetailDto Alert { get; set; } = new();
 }
 
