@@ -10,13 +10,16 @@ public class NotificationController : ControllerBase
 {
     private readonly ProcessScanService _processScanService;
     private readonly GetGuardianNotificationsService _guardianNotificationsService;
+    private readonly RegisterDeviceService _registerDeviceService;
 
     public NotificationController(
         ProcessScanService processScanService,
-        GetGuardianNotificationsService guardianNotificationsService)
+        GetGuardianNotificationsService guardianNotificationsService,
+        RegisterDeviceService registerDeviceService)
     {
         _processScanService = processScanService;
         _guardianNotificationsService = guardianNotificationsService;
+        _registerDeviceService = registerDeviceService;
     }
 
     [HttpPost("scan")]
@@ -31,5 +34,12 @@ public class NotificationController : ControllerBase
     {
         var notifications = await _guardianNotificationsService.ExecuteAsync(profileId, ct);
         return Ok(notifications);
+    }
+
+    [HttpPost("devices")]
+    public async Task<IActionResult> RegisterDevice([FromBody] RegisterDeviceRequestDto request, CancellationToken ct)
+    {
+        await _registerDeviceService.ExecuteAsync(request, ct);
+        return Ok();
     }
 }
