@@ -36,6 +36,14 @@ public static class ServiceCollectionExtensions
                     "Missing Services__UserManagement__BaseUrl (set it in .env)"));
         });
 
+        services.AddHttpClient("ms-route", client =>
+        {
+            client.BaseAddress = new Uri(
+                configuration["Services:Route:BaseUrl"]
+                ?? throw new InvalidOperationException(
+                    "Missing Services__Route__BaseUrl (set it in .env)"));
+        });
+
         return services;
     }
 }
