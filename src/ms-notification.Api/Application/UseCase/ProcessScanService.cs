@@ -36,15 +36,17 @@ public class ProcessScanService
     {
         var stopName = (string?)null;
         var routeName = (string?)null;
+        var assignedRouteStopId = (Guid?)null;
 
         if (request.RouteId != Guid.Empty)
         {
-            var (assigned, assignedStopName) = await GetAssignedStopAsync(request.RouteId, request.StudentProfileId);
+            var (assigned, routeStopId, assignedStopName) = await GetAssignedStopAsync(request.RouteId, request.StudentProfileId);
             if (!assigned)
             {
                 throw new InvalidOperationException("Student not assigned to this route");
             }
 
+            assignedRouteStopId = routeStopId;
             stopName = assignedStopName;
             routeName = await GetRouteNameAsync(request.RouteId);
         }
@@ -70,7 +72,7 @@ public class ProcessScanService
             Id = Guid.NewGuid(),
             RouteExecutionId = request.RouteExecutionId,
             ProfileId = request.StudentProfileId,
-            RouteStopId = request.RouteStopId,
+            RouteStopId = assignedRouteStopId ?? request.RouteStopId,
             DateTime = DateTime.UtcNow,
             BoardingType = request.BoardingType
         };
@@ -129,7 +131,7 @@ public class ProcessScanService
         return text.Length > MaxDescriptionLength ? text[..MaxDescriptionLength] : text;
     }
 
-    private async Task<(bool Assigned, string? StopName)> GetAssignedStopAsync(Guid routeId, Guid studentProfileId)
+    private async Task<(bool Assigned, Guid? RouteStopId, string? StopName)> GetAssignedStopAsync(Guid routeId, Guid studentProfileId)
     {
         try
         {
@@ -138,26 +140,31 @@ public class ProcessScanService
 
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                return (false, null);
+                return (false, null, null);
             }
 
             if (!response.IsSuccessStatusCode)
             {
-                return (true, null);
+                return (true, null, null);
             }
 
             var json = await response.Content.ReadAsStringAsync();
             using var document = JsonDocument.Parse(json);
+
+            var routeStopId = document.RootElement.TryGetProperty("routeStopId", out var idValue) && idValue.TryGetGuid(out var parsedId)
+                ? parsedId
+                : (Guid?)null;
+
             var stopName = document.RootElement.TryGetProperty("stopName", out var value)
                 ? value.GetString()
                 : null;
 
-            return (true, stopName);
+            return (true, routeStopId, stopName);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Could not verify the assignment of student {StudentProfileId} on route {RouteId}", studentProfileId, routeId);
-            return (true, null);
+            return (true, null, null);
         }
     }
 
