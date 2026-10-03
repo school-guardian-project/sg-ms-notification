@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Domain.Model;
 using ms_notification.Api.Infrastructure.Persistence.Configuration;
+using ms_notification.Api.Infrastructure.Persistence.Entity;
 
 namespace ms_notification.Api.Infrastructure.Persistence.Context;
 
@@ -25,5 +26,13 @@ public class NotificationContext : DbContext
         modelBuilder.ApplyConfiguration(new AlertRecipientConfiguration());
         modelBuilder.ApplyConfiguration(new BoardingConfiguration());
         modelBuilder.ApplyConfiguration(new DeviceTokenConfiguration());
+
+        modelBuilder.Entity<ProfileRefEntity>()
+            .HasNoKey()
+            .ToTable("Profile", schema: "Iam");
+
+        modelBuilder.Entity<PersonRefEntity>()
+            .HasNoKey()
+            .ToTable("Person", schema: "UserManagement");
     }
 }
