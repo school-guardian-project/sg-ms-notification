@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
@@ -123,7 +124,7 @@ public class StudentScannedConsumer : BackgroundService
                     sound = "default"
                 });
 
-                var response = await client.PostAsync(PushEndpoint, new StringContent(payload, "application/json"));
+                var response = await client.PostAsync(PushEndpoint, new StringContent(payload, Encoding.UTF8, "application/json"));
 
                 if (!response.IsSuccessStatusCode)
                 {
