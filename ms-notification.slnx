@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ms-notification.Api/ms-notification.Api.csproj" />
+  </Folder>
+</Solution>

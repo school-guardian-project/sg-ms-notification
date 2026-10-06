@@ -1,0 +1,7 @@
+.env
+
+src/ms-notification.Api/bin
+src/ms-notification.Api/obj
+src/ms-notification.Api/appsettings.*
+
+.idea
