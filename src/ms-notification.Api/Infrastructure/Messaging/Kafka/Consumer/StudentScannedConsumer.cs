@@ -50,46 +50,60 @@ public class StudentScannedConsumer : BackgroundService
                 var result = _consumer.Consume(stoppingToken);
                 if (result?.Message == null) continue;
 
-                var data = JsonSerializer.Deserialize<StudentScannedEvent>(result.Message.Value);
-                if (data == null) continue;
-
-                using var scope = _serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<NotificationContext>();
-
-                var alert = context.Alerts.FirstOrDefault(a => a.Id == data.AlertId);
-                if (alert == null) continue;
-
-                var familyMembers = await GetFamilyMembersAsync(data.StudentProfileId);
-                foreach (var memberProfileId in familyMembers)
-                {
-                    context.AlertRecipients.Add(new Domain.Model.AlertRecipient
-                    {
-                        Id = Guid.NewGuid(),
-                        AlertId = data.AlertId,
-                        ProfileId = memberProfileId,
-                        DateTimeRead = DateTime.UtcNow
-                    });
-                }
-
-                await context.SaveChangesAsync();
-
-                try
-                {
-                    var tokens = await GetDeviceTokensAsync(context, familyMembers);
-                    if (tokens.Count > 0)
-                    {
-                        await SendPushAsync(tokens, alert.Description);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Could not push the notification for alert {AlertId}", data.AlertId);
-                }
+                await ProcessMessageAsync(result.Message.Value);
             }
             catch (ConsumeException ex)
             {
                 _logger.LogError(ex, "Kafka consume error: {Reason}", ex.Error.Reason);
             }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                // A failed message must not bring the consumer down; log it and keep consuming.
+                _logger.LogError(ex, "Failed to process a student.scanned message");
+            }
+        }
+    }
+
+    private async Task ProcessMessageAsync(string rawMessage)
+    {
+        var data = JsonSerializer.Deserialize<StudentScannedEvent>(rawMessage);
+        if (data == null) return;
+
+        using var scope = _serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<NotificationContext>();
+
+        var alert = await context.Alerts.FirstOrDefaultAsync(a => a.Id == data.AlertId);
+        if (alert == null) return;
+
+        var familyMembers = await GetFamilyMembersAsync(data.StudentProfileId);
+        foreach (var memberProfileId in familyMembers)
+        {
+            context.AlertRecipients.Add(new Domain.Model.AlertRecipient
+            {
+                Id = Guid.NewGuid(),
+                AlertId = data.AlertId,
+                ProfileId = memberProfileId,
+                DateTimeRead = DateTime.UtcNow
+            });
+        }
+
+        await context.SaveChangesAsync();
+
+        try
+        {
+            var tokens = await GetDeviceTokensAsync(context, familyMembers);
+            if (tokens.Count > 0)
+            {
+                await SendPushAsync(tokens, alert.Description);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not push the notification for alert {AlertId}", data.AlertId);
         }
     }
 
@@ -156,7 +170,12 @@ public class StudentScannedConsumer : BackgroundService
             }
 
             var content = await response.Content.ReadAsStringAsync();
-            var members = JsonSerializer.Deserialize<List<FamilyMemberResponse>>(content);
+            // ms-user-management returns camelCase ("profileId"); without
+            // PropertyNameCaseInsensitive the Guid binds as Empty and the
+            // AlertRecipient INSERT fails on FK_AlertRecipient_Profile.
+            var members = JsonSerializer.Deserialize<List<FamilyMemberResponse>>(
+                content,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             return members?.Select(m => m.ProfileId).ToList() ?? new List<Guid>();
         }
