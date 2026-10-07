@@ -5,3 +5,5 @@ src/ms-notification.Api/obj
 src/ms-notification.Api/appsettings.*
 
 .idea
+
+graphify-*
