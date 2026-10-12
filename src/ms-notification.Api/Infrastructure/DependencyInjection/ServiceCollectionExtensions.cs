@@ -10,10 +10,11 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddNotificationServices(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<NotificationContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection")
-            ));
+        services.AddDbContextPool<NotificationContext>(
+            (sp, options) => options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sql => sql.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null)),
+            poolSize: 32);
 
         services.AddSingleton<IProducer<string, string>>(sp =>
         {
