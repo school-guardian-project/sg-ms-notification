@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ms_notification.Api.Application.Dto;
 using ms_notification.Api.Application.UseCase;
 
@@ -22,6 +23,7 @@ public class NotificationController : ControllerBase
         _registerDeviceService = registerDeviceService;
     }
 
+    [EnableRateLimiting("writes")]
     [HttpPost("scan")]
     public async Task<IActionResult> Scan([FromBody] ScanRequestDto request)
     {
@@ -36,6 +38,7 @@ public class NotificationController : ControllerBase
         return Ok(notifications);
     }
 
+    [EnableRateLimiting("writes")]
     [HttpPost("devices")]
     public async Task<IActionResult> RegisterDevice([FromBody] RegisterDeviceRequestDto request, CancellationToken ct)
     {
