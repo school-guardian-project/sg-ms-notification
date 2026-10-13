@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 
 namespace ms_notification.Api.Application.UseCase;
 
-public class GetGuardianNotificationsService
+public class GetGuardianNotificationsService : IGetGuardianNotificationsUseCase
 {
     private readonly NotificationContext _context;
 
