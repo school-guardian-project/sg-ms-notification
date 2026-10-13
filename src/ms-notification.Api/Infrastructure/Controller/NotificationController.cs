@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Grpc.Core;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using ms_notification.Api.Application.Dto;
 using ms_notification.Api.Domain.Port.In;
 
@@ -29,6 +30,7 @@ public class NotificationController : ControllerBase
         _credentialService = credentialService;
     }
 
+    [EnableRateLimiting("writes")]
     [HttpPost("scan")]
     public async Task<IActionResult> Scan([FromBody] ScanRequestDto request, CancellationToken ct)
     {
@@ -94,6 +96,7 @@ public class NotificationController : ControllerBase
         return Ok(await _guardianNotificationsService.ExecuteAsync(profileId, ct));
     }
 
+    [EnableRateLimiting("writes")]
     [HttpPost("devices")]
     public async Task<IActionResult> RegisterDevice([FromBody] RegisterDeviceRequestDto request, CancellationToken ct)
     {

@@ -19,10 +19,11 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddNotificationServices(this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddDbContext<NotificationContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection")
-            ));
+        services.AddDbContextPool<NotificationContext>(
+            (sp, options) => options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sql => sql.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null)),
+            poolSize: 32);
 
         var jwtSecret = configuration["Jwt:Secret"]
             ?? throw new InvalidOperationException("Missing Jwt__Secret (set it in .env)");
