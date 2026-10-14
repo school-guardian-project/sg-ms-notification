@@ -1,13 +1,11 @@
-using System.Text;
 using Confluent.Kafka;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using ms_notification.Api.Application.Security;
 using ms_notification.Api.Application.UseCase;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Domain.Port.Out;
 using ms_notification.Api.Infrastructure.Grpc;
+using ms_notification.Api.Infrastructure.Security;
 using ms_notification.Api.Infrastructure.Messaging.Kafka;
 using ms_notification.Api.Infrastructure.Messaging.Observer;
 using ms_notification.Api.Infrastructure.Persistence.Context;
@@ -26,23 +24,10 @@ public static class ServiceCollectionExtensions
                 sql => sql.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null)),
             poolSize: 32);
 
-        var jwtSecret = configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("Missing Jwt__Secret (set it in .env)");
-
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.MapInboundClaims = false;
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-                    ValidateLifetime = true,
-                    ClockSkew = TimeSpan.FromMinutes(1)
-                };
-            });
+        // El gateway (Kong) valida el access token RS256 y reenvía la identidad en
+        // las cabeceras X-User-*. Aquí solo se confía en ellas para poblar
+        // HttpContext.User; sin cabeceras la petición es anónima.
+        services.AddGatewayAuthentication();
         services.AddAuthorization();
 
         services.AddSingleton<IProducer<string, string>>(sp =>
