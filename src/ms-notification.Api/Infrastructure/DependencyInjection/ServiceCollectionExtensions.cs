@@ -9,6 +9,7 @@ using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Domain.Port.Out;
 using ms_notification.Api.Infrastructure.Grpc;
 using ms_notification.Api.Infrastructure.Messaging.Kafka;
+using ms_notification.Api.Infrastructure.Messaging.Observer;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 using ms_notification.Api.Infrastructure.Persistence.Directory;
 
@@ -55,6 +56,9 @@ public static class ServiceCollectionExtensions
 
         // El consumidor de student.scanned entrega por IHttpClientFactory (Expo Push).
         services.AddHttpClient();
+
+        // Observer para eventos de escaneo de estudiantes
+        services.AddSingleton<StudentScannedEventObserver>();
 
         services.AddScoped<IEventPublisher, KafkaEventPublisher>();
 
