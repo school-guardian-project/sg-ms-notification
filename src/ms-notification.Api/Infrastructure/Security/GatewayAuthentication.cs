@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
 
 namespace ms_notification.Api.Infrastructure.Security;
@@ -25,9 +27,14 @@ public sealed class GatewayAuthenticationHandler : AuthenticationHandler<Gateway
 
     public const string UserIdHeader = "X-User-Id";
     public const string UserRoleHeader = "X-User-Role";
+    public const string UserRoleNameHeader = "X-User-Role-Name";
     public const string UserEmailHeader = "X-User-Email";
+    public const string UserPermissionsHeader = "X-User-Permissions";
     public const string CampusIdHeader = "X-Campus-Id";
     public const string SchoolIdHeader = "X-School-Id";
+
+    /// <summary>Tipo de claim que contiene cada permiso concedido (FR-2.1).</summary>
+    public const string PermissionClaimType = "permission";
 
     public GatewayAuthenticationHandler(
         IOptionsMonitor<GatewayAuthenticationOptions> options,
@@ -52,9 +59,15 @@ public sealed class GatewayAuthenticationHandler : AuthenticationHandler<Gateway
         };
 
         AddIfPresent(claims, "roleId", Request.Headers[UserRoleHeader].ToString());
+        AddIfPresent(claims, ClaimTypes.Role, Request.Headers[UserRoleNameHeader].ToString());
         AddIfPresent(claims, "campusId", Request.Headers[CampusIdHeader].ToString());
         AddIfPresent(claims, "schoolId", Request.Headers[SchoolIdHeader].ToString());
         AddIfPresent(claims, "email", Request.Headers[UserEmailHeader].ToString());
+
+        foreach (var permission in ReadPermissions(Request.Headers[UserPermissionsHeader].ToString()))
+        {
+            claims.Add(new Claim(PermissionClaimType, permission));
+        }
 
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);
@@ -68,6 +81,52 @@ public sealed class GatewayAuthenticationHandler : AuthenticationHandler<Gateway
         {
             claims.Add(new Claim(type, value));
         }
+    }
+
+    private static IEnumerable<string> ReadPermissions(string? header)
+    {
+        if (string.IsNullOrWhiteSpace(header))
+        {
+            return Array.Empty<string>();
+        }
+
+        return header.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+}
+
+/// <summary>
+/// Exige que la peticion incluya el permiso indicado (FR-2.1). El permiso viaja
+/// como cabecera X-User-Permissions que el gateway deriva del claim
+/// permissions[] del access token.
+/// </summary>
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
+public sealed class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
+{
+    private readonly string _permission;
+
+    public RequirePermissionAttribute(string permission)
+    {
+        _permission = permission;
+    }
+
+    public Task OnAuthorizationAsync(AuthorizationFilterContext context)
+    {
+        var user = context.HttpContext.User;
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            context.Result = new UnauthorizedResult();
+            return Task.CompletedTask;
+        }
+
+        if (!user.HasClaim(GatewayAuthenticationHandler.PermissionClaimType, _permission))
+        {
+            context.Result = new ObjectResult(new { message = "Forbidden" })
+            {
+                StatusCode = StatusCodes.Status403Forbidden,
+            };
+        }
+
+        return Task.CompletedTask;
     }
 }
 
