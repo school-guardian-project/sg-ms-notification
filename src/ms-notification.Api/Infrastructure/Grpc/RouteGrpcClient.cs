@@ -55,7 +55,10 @@ public sealed class RouteGrpcClient : IRouteDirectory, IDisposable
             ? new StudentStopOnRoute(
                 Guid.Parse(response.RouteStopId),
                 Guid.Parse(response.StopId),
-                response.StopName)
+                response.StopName,
+                response.StopAddress,
+                response.Latitude,
+                response.Longitude)
             : null;
     }
 

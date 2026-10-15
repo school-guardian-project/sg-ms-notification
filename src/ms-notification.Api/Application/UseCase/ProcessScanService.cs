@@ -14,9 +14,6 @@ namespace ms_notification.Api.Application.UseCase;
 
 public class ProcessScanService : IProcessScanUseCase
 {
-    private const int MaxDescriptionLength = 100;
-    private const string DefaultStudentName = "Estudiante";
-
     // Ventana de idempotencia: un doble escaneo no debe crear dos abordajes.
     private static readonly TimeSpan DuplicateWindow = TimeSpan.FromSeconds(30);
 
@@ -109,7 +106,8 @@ public class ProcessScanService : IProcessScanUseCase
         }
 
         var studentName = await _studentDirectory.GetStudentNameAsync(studentProfileId, ct);
-        var description = BuildDescription(request.BoardingType, studentName, route.RouteName, stop.StopName);
+        var description = AlertDescriptionBuilder.Build(
+            request.BoardingType, studentName, route.RouteName, stop.StopName, stop.Address);
         var now = DateTime.UtcNow;
 
         var boarding = new Boarding
@@ -137,7 +135,7 @@ public class ProcessScanService : IProcessScanUseCase
         await _context.SaveChangesAsync(ct);
 
         var eventData = StudentScannedEventMapper.ToEvent(
-            boarding.Id, alert.Id, studentProfileId, trip.Id, request.BoardingType);
+            boarding.Id, alert.Id, studentProfileId, trip.Id, request.BoardingType, stop);
 
         await _eventPublisher.PublishAsync("student.scanned", eventData);
 
@@ -147,26 +145,6 @@ public class ProcessScanService : IProcessScanUseCase
             AlertId = alert.Id,
             ParentsNotified = await CountParentsAsync(studentProfileId, ct)
         };
-    }
-
-    private static string BuildDescription(
-        BoardingType boardingType, string? studentName, string? routeName, string? stopName)
-    {
-        var action = boardingType == BoardingType.OFF_BOARD ? "bajó del bus" : "subió al bus";
-        var who = string.IsNullOrWhiteSpace(studentName) ? DefaultStudentName : studentName;
-        var text = $"{who} {action}";
-
-        if (!string.IsNullOrWhiteSpace(stopName))
-        {
-            text += $" en la parada {stopName}";
-        }
-
-        if (!string.IsNullOrWhiteSpace(routeName))
-        {
-            text += $" - {routeName}";
-        }
-
-        return text.Length > MaxDescriptionLength ? text[..MaxDescriptionLength] : text;
     }
 
     private async Task<int> CountParentsAsync(Guid studentProfileId, CancellationToken ct)
