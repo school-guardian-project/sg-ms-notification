@@ -1,7 +1,9 @@
 .env
 
-src/ms-notification.Api/bin
-src/ms-notification.Api/obj
+# Salida de compilacion (cubre tambien el proyecto de pruebas).
+bin/
+obj/
+
 src/ms-notification.Api/appsettings.*
 
 .idea
