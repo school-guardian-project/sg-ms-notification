@@ -8,6 +8,7 @@ using ms_notification.Api.Infrastructure.Grpc;
 using ms_notification.Api.Infrastructure.Security;
 using ms_notification.Api.Infrastructure.Messaging.Kafka;
 using ms_notification.Api.Infrastructure.Messaging.Observer;
+using ms_notification.Api.Infrastructure.Messaging.Push;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 using ms_notification.Api.Infrastructure.Persistence.Directory;
 
@@ -39,7 +40,8 @@ public static class ServiceCollectionExtensions
             return new ProducerBuilder<string, string>(config).Build();
         });
 
-        // El consumidor de student.scanned entrega por IHttpClientFactory (Expo Push).
+        // El push lo comparten el consumidor de student.scanned y el de
+        // incident.reported: el adaptador Expo va detras de IPushNotifier.
         services.AddHttpClient();
 
         // Observer para eventos de escaneo de estudiantes
@@ -53,10 +55,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRegisterDeviceUseCase, RegisterDeviceService>();
         services.AddScoped<IGetStudentCredentialUseCase, GetStudentCredentialService>();
         services.AddScoped<IReportIncidentUseCase, ReportIncidentService>();
+        services.AddScoped<INotifyIncidentReportedUseCase, NotifyIncidentReportedService>();
 
-        // Adaptadores de salida: gRPC (ms-route / ms-user-management) y EF.
+        // Adaptadores de salida: gRPC (ms-route / ms-user-management), EF y Expo.
         services.AddSingleton<IRouteDirectory, RouteGrpcClient>();
         services.AddSingleton<IFamilyDirectory, FamilyGrpcClient>();
+        services.AddSingleton<IPushNotifier, ExpoPushNotifier>();
         services.AddScoped<IStudentDirectory, StudentDirectory>();
         services.AddScoped<ISchoolDirectory, SchoolDirectory>();
 
