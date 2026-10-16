@@ -17,17 +17,20 @@ public class NotificationController : ControllerBase
     private readonly IGetGuardianNotificationsUseCase _guardianNotificationsService;
     private readonly IRegisterDeviceUseCase _registerDeviceService;
     private readonly IGetStudentCredentialUseCase _credentialService;
+    private readonly IReportIncidentUseCase _reportIncidentService;
 
     public NotificationController(
         IProcessScanUseCase processScanService,
         IGetGuardianNotificationsUseCase guardianNotificationsService,
         IRegisterDeviceUseCase registerDeviceService,
-        IGetStudentCredentialUseCase credentialService)
+        IGetStudentCredentialUseCase credentialService,
+        IReportIncidentUseCase reportIncidentService)
     {
         _processScanService = processScanService;
         _guardianNotificationsService = guardianNotificationsService;
         _registerDeviceService = registerDeviceService;
         _credentialService = credentialService;
+        _reportIncidentService = reportIncidentService;
     }
 
     [EnableRateLimiting("writes")]
@@ -52,6 +55,39 @@ public class NotificationController : ControllerBase
         catch (InvalidOperationException ex)
         {
             // Regla de negocio (sin viaje, sin asignacion, token invalido): 409.
+            return Conflict(new { message = ex.Message });
+        }
+        catch (RpcException)
+        {
+            // No se pudo verificar contra otro servicio: 503, no 500.
+            return StatusCode(StatusCodes.Status503ServiceUnavailable);
+        }
+    }
+
+    [EnableRateLimiting("writes")]
+    [HttpPost("incidents")]
+    public async Task<IActionResult> ReportIncident(
+        [FromBody] ReportIncidentRequestDto request, CancellationToken ct)
+    {
+        if (User.FindFirstValue("roleId") != DriverRoleId)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var driverProfileId = CurrentProfileId();
+        if (driverProfileId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            return Ok(await _reportIncidentService.ExecuteAsync(driverProfileId, request, ct));
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Regla de negocio (sin viaje activo, tipo desconocido, descripcion
+            // demasiado larga): 409.
             return Conflict(new { message = ex.Message });
         }
         catch (RpcException)
