@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
@@ -13,12 +12,13 @@ namespace ms_notification.Api.Infrastructure.Messaging.Kafka.Consumer;
 
 public class StudentScannedConsumer : BackgroundService
 {
-    private const int ExpoBatchSize = 100;
+    /// <summary>Titulo de los push de abordaje/descenso (FR-5.2, FR-5.3).</summary>
+    public const string PushTitle = "Notificación de ruta";
 
     private readonly IServiceProvider _serviceProvider;
     private readonly IConfiguration _configuration;
     private readonly IFamilyDirectory _familyDirectory;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IPushNotifier _pushNotifier;
     private readonly ILogger<StudentScannedConsumer> _logger;
     private IConsumer<string, string>? _consumer;
 
@@ -26,13 +26,13 @@ public class StudentScannedConsumer : BackgroundService
         IServiceProvider serviceProvider,
         IConfiguration configuration,
         IFamilyDirectory familyDirectory,
-        IHttpClientFactory httpClientFactory,
+        IPushNotifier pushNotifier,
         ILogger<StudentScannedConsumer> logger)
     {
         _serviceProvider = serviceProvider;
         _configuration = configuration;
         _familyDirectory = familyDirectory;
-        _httpClientFactory = httpClientFactory;
+        _pushNotifier = pushNotifier;
         _logger = logger;
     }
 
@@ -110,10 +110,7 @@ public class StudentScannedConsumer : BackgroundService
         try
         {
             var tokens = await GetDeviceTokensAsync(context, parents, ct);
-            if (tokens.Count > 0)
-            {
-                await SendPushAsync(tokens, alert.Description, ct);
-            }
+            await _pushNotifier.SendAsync(tokens, PushTitle, alert.Description, ct);
         }
         catch (Exception ex)
         {
@@ -150,41 +147,6 @@ public class StudentScannedConsumer : BackgroundService
             .Select(t => t.ExpoToken)
             .Distinct()
             .ToListAsync(ct);
-    }
-
-    private async Task SendPushAsync(IReadOnlyCollection<string> tokens, string? body, CancellationToken ct)
-    {
-        var endpoint = _configuration["Expo:PushEndpoint"]
-            ?? throw new InvalidOperationException("Missing Expo__PushEndpoint (set it in .env)");
-
-        var client = _httpClientFactory.CreateClient();
-
-        foreach (var chunk in tokens.Chunk(ExpoBatchSize))
-        {
-            var messages = chunk.Select(token => new
-            {
-                to = token,
-                title = "Notificación de ruta",
-                body = body ?? string.Empty,
-                sound = "default"
-            });
-
-            try
-            {
-                var payload = JsonSerializer.Serialize(messages);
-                var response = await client.PostAsync(
-                    endpoint, new StringContent(payload, Encoding.UTF8, "application/json"), ct);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogWarning("Expo push returned {StatusCode}", response.StatusCode);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Could not deliver a push batch");
-            }
-        }
     }
 
     public override void Dispose()

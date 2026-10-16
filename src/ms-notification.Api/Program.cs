@@ -44,6 +44,7 @@ builder.Services.AddRateLimiter(options =>
 
 builder.Services.AddNotificationServices(builder.Configuration);
 builder.Services.AddHostedService<ms_notification.Api.Infrastructure.Messaging.Kafka.Consumer.StudentScannedConsumer>();
+builder.Services.AddHostedService<ms_notification.Api.Infrastructure.Messaging.Kafka.Consumer.IncidentReportedConsumer>();
 
 var app = builder.Build();
 
