@@ -10,7 +10,12 @@ namespace ms_notification.Api.Application;
 /// </summary>
 public static class AlertDescriptionBuilder
 {
-    /// <summary>Limite de la columna Notification.Alert.Description.</summary>
+    /// <summary>
+    /// Tope del texto de abordaje: la columna Notification.Alert.Description admite
+    /// 500 caracteres, pero el mensaje de subida/bajada se mantiene corto para que
+    /// se lea de un vistazo. Las descripciones libres de incidente (FR-8.1) si usan
+    /// el limite completo de la columna.
+    /// </summary>
     public const int MaxLength = 100;
 
     private const string DefaultStudentName = "Estudiante";

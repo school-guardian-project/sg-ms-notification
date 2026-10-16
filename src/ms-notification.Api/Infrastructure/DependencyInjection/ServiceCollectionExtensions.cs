@@ -52,11 +52,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGetGuardianNotificationsUseCase, GetGuardianNotificationsService>();
         services.AddScoped<IRegisterDeviceUseCase, RegisterDeviceService>();
         services.AddScoped<IGetStudentCredentialUseCase, GetStudentCredentialService>();
+        services.AddScoped<IReportIncidentUseCase, ReportIncidentService>();
 
         // Adaptadores de salida: gRPC (ms-route / ms-user-management) y EF.
         services.AddSingleton<IRouteDirectory, RouteGrpcClient>();
         services.AddSingleton<IFamilyDirectory, FamilyGrpcClient>();
         services.AddScoped<IStudentDirectory, StudentDirectory>();
+        services.AddScoped<ISchoolDirectory, SchoolDirectory>();
 
         services.AddSingleton<QrTokenSigner>();
 

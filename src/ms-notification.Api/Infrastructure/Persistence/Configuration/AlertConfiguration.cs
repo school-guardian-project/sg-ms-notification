@@ -10,7 +10,7 @@ public class AlertConfiguration : IEntityTypeConfiguration<Alert>
     {
         builder.ToTable("Alert");
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.Description).HasMaxLength(100);
+        builder.Property(e => e.Description).HasMaxLength(500);
         builder.HasOne<AlertType>().WithMany().HasForeignKey(e => e.AlertTypeId);
     }
 }
