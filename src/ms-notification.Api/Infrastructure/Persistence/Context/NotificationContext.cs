@@ -34,5 +34,14 @@ public class NotificationContext : DbContext
         modelBuilder.Entity<PersonRefEntity>()
             .HasNoKey()
             .ToTable("Person", schema: "UserManagement");
+
+        // Solo lectura, para resolver el colegio del conductor que reporta (FR-8.2).
+        modelBuilder.Entity<SchoolCampusRefEntity>()
+            .HasNoKey()
+            .ToTable("SchoolCampus", schema: "School");
+
+        modelBuilder.Entity<SchoolAdminRefEntity>()
+            .HasNoKey()
+            .ToTable("SchoolAdmin", schema: "School");
     }
 }
