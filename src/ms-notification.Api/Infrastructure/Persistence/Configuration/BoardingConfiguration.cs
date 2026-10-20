@@ -10,6 +10,9 @@ public class BoardingConfiguration : IEntityTypeConfiguration<Boarding>
     {
         builder.ToTable("Boarding");
         builder.HasKey(e => e.Id);
-        builder.Property(e => e.BoardingType).HasMaxLength(20);
+        builder.Property(e => e.BoardingType)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .IsRequired();
     }
 }

@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.Dto;
 using ms_notification.Api.Domain.Model;
+using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 
 namespace ms_notification.Api.Application.UseCase;
 
-public class RegisterDeviceService
+public class RegisterDeviceService : IRegisterDeviceUseCase
 {
     private readonly NotificationContext _context;
 
@@ -14,9 +15,10 @@ public class RegisterDeviceService
         _context = context;
     }
 
-    public async Task ExecuteAsync(RegisterDeviceRequestDto request, CancellationToken ct = default)
+    // El profileId viene del JWT, no del body: no confiamos en el cliente.
+    public async Task ExecuteAsync(Guid profileId, RegisterDeviceRequestDto request, CancellationToken ct = default)
     {
-        if (request.ProfileId == Guid.Empty)
+        if (profileId == Guid.Empty)
         {
             throw new InvalidOperationException("ProfileId is required");
         }
@@ -31,16 +33,11 @@ public class RegisterDeviceService
 
         if (device is null)
         {
-            device = new DeviceToken
-            {
-                Id = Guid.NewGuid(),
-                ExpoToken = request.ExpoToken
-            };
-
+            device = new DeviceToken { Id = Guid.NewGuid(), ExpoToken = request.ExpoToken };
             _context.DeviceTokens.Add(device);
         }
 
-        device.ProfileId = request.ProfileId;
+        device.ProfileId = profileId;
         device.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync(ct);

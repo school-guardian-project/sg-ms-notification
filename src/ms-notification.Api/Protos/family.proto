@@ -1,0 +1,39 @@
+syntax = "proto3";
+option csharp_namespace = "ms_notification.Api.Infrastructure.Grpc";
+package family;
+
+service FamilyService {
+  rpc RegisterFamilyGroup (RegisterFamilyGroupRequest) returns (RegisterFamilyGroupResponse);
+  rpc GetFamilyMembersByStudent (GetFamilyMembersByStudentRequest) returns (GetFamilyMembersByStudentResponse);
+}
+
+message FamilyMember {
+  string profile_id = 1;
+  string relationship_type = 2;
+}
+
+
+
+message RegisterFamilyGroupRequest {
+  string family_name = 1;
+  string observations = 2;
+  repeated FamilyMember members = 3;
+}
+
+message RegisteredMember {
+  string member_id = 1;
+  string profile_id = 2;
+}
+
+message RegisterFamilyGroupResponse {
+  string family_id = 1;
+  repeated RegisteredMember members = 2;
+}
+
+message GetFamilyMembersByStudentRequest {
+  string student_profile_id = 1;
+}
+
+message GetFamilyMembersByStudentResponse {
+  repeated string parent_profile_ids = 1;
+}

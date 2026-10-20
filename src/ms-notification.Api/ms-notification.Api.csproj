@@ -10,12 +10,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Confluent.Kafka" Version="2.15.1" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.84.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.84.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
-    <PackageReference Include="Confluent.Kafka" Version="2.15.1" />
     <PackageReference Include="Scalar.AspNetCore" Version="2.17.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      route.proto y family.proto se sincronizan con ../sync-protos.sh. Aqui solo
+      se consumen (GrpcServices="Client"): los servidores viven en ms-route y
+      ms-user-management.
+    -->
+    <Protobuf Include="Protos\route.proto" GrpcServices="Client" />
+    <Protobuf Include="Protos\family.proto" GrpcServices="Client" />
   </ItemGroup>
 
   <ItemGroup>

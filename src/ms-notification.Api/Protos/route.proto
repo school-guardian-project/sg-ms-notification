@@ -1,0 +1,230 @@
+// Contrato v1 del servicio de rutas (package route) que ms-route expone por
+// gRPC: asignacion de estudiante a parada y viaje abierto de un conductor para
+// el flujo de escaneo QR.
+//
+// ms-notification consume este contrato en su Protos/route.proto, copiado con
+// sync-protos.sh; ese script solo reescribe `option csharp_namespace`, asi que
+// este encabezado no debe referirse a archivos del repo de ms-route.
+syntax = "proto3";
+option csharp_namespace = "ms_notification.Api.Infrastructure.Grpc";
+package route;
+
+service RouteService {
+  rpc CreateRoute (CreateRouteRequest) returns (CreateRouteResponse);
+  rpc GetRoute (GetRouteRequest) returns (GetRouteResponse);
+  rpc ListRoutes (ListRoutesRequest) returns (ListRoutesResponse);
+  rpc UpdateRoute (UpdateRouteRequest) returns (UpdateRouteResponse);
+  rpc DeleteRoute (DeleteRouteRequest) returns (DeleteRouteResponse);
+  rpc GetCurrentRoute (GetCurrentRouteRequest) returns (GetCurrentRouteResponse);
+  rpc GetStudentRoute (GetStudentRouteRequest) returns (GetStudentRouteResponse);
+  rpc StartTrip (StartTripRequest) returns (StartTripResponse);
+  rpc EndTrip (EndTripRequest) returns (EndTripResponse);
+  rpc AssignStudentToRoute (AssignStudentToRouteRequest) returns (AssignStudentToRouteResponse);
+  rpc AssignBusToRoute (AssignBusToRouteRequest) returns (AssignBusToRouteResponse);
+  rpc AttachStopToRoute (AttachStopToRouteRequest) returns (AttachStopToRouteResponse);
+  rpc GetStudentStopOnRoute (GetStudentStopOnRouteRequest) returns (GetStudentStopOnRouteResponse);
+  rpc GetCurrentTrip (GetCurrentTripRequest) returns (GetCurrentTripResponse);
+}
+
+message CreateRouteRequest {
+  string campuse_id = 1;
+  string name = 2;
+  string target_sector = 3;
+  string start_time = 4;
+  string end_time = 5;
+}
+
+message CreateRouteResponse {
+  string id = 1;
+  string name = 2;
+  string target_sector = 3;
+  string status = 4;
+  string start_time = 5;
+  string end_time = 6;
+}
+
+message GetRouteRequest {
+  string id = 1;
+}
+
+message GetRouteResponse {
+  string id = 1;
+  string name = 2;
+  string target_sector = 3;
+  string status = 4;
+  string campuse_id = 5;
+  string start_time = 6;
+  string end_time = 7;
+}
+
+message ListRoutesRequest {}
+
+message RouteListItem {
+  string id = 1;
+  string name = 2;
+}
+
+message ListRoutesResponse {
+  repeated RouteListItem routes = 1;
+}
+
+message UpdateRouteRequest {
+  string id = 1;
+  string campuse_id = 2;
+  string name = 3;
+  string target_sector = 4;
+  string start_time = 5;
+  string end_time = 6;
+}
+
+message UpdateRouteResponse {
+  string id = 1;
+  string name = 2;
+  string target_sector = 3;
+  string status = 4;
+  string start_time = 5;
+  string end_time = 6;
+}
+
+message DeleteRouteRequest {
+  string id = 1;
+}
+
+message DeleteRouteResponse {
+  bool success = 1;
+}
+
+message GetCurrentRouteRequest {
+  string driver_id = 1;
+}
+
+message GetCurrentRouteResponse {
+  string id = 1;
+  string name = 2;
+  string campuse_id = 3;
+  string target_sector = 4;
+  string status = 5;
+  string start_time = 6;
+  string end_time = 7;
+  repeated StopItem stops = 8;
+}
+
+message GetStudentRouteRequest {
+  string student_id = 1;
+}
+
+message GetStudentRouteResponse {
+  string id = 1;
+  string name = 2;
+  string campuse_id = 3;
+  string target_sector = 4;
+  string status = 5;
+  string start_time = 6;
+  string end_time = 7;
+  repeated StopItem stops = 8;
+}
+
+message StartTripRequest {
+  string route_id = 1;
+  string bus_id = 2;
+  string driver_id = 3;
+}
+
+message StartTripResponse {
+  string id = 1;
+  string bus_id = 2;
+  string driver_id = 3;
+  string status = 4;
+}
+
+message EndTripRequest {
+  string trip_id = 1;
+}
+
+message EndTripResponse {
+  string id = 1;
+  string bus_id = 2;
+  string driver_id = 3;
+  string status = 4;
+}
+
+message AssignStudentToRouteRequest {
+  string route_id = 1;
+  string student_id = 2;
+  string stop_id = 3;
+}
+
+message AssignStudentToRouteResponse {
+  string id = 1;
+  string route_id = 2;
+  string student_id = 3;
+  string stop_id = 4;
+  string status = 5;
+}
+
+message AssignBusToRouteRequest {
+  string route_id = 1;
+  string bus_id = 2;
+}
+
+message AssignBusToRouteResponse {
+  string id = 1;
+  string route_id = 2;
+  string bus_id = 3;
+  string status = 4;
+}
+
+message StopItem {
+  string id = 1;
+  string name = 2;
+  string address = 3;
+  double latitude = 4;
+  double longitude = 5;
+  int32 order_sequence = 6;
+}
+
+message AttachStopToRouteRequest {
+  string route_id = 1;
+  string stop_id = 2;
+}
+
+message AttachStopToRouteResponse {
+  string id = 1;
+  string route_id = 2;
+  string stop_id = 3;
+  int32 order_sequence = 4;
+  string status = 5;
+}
+
+message GetStudentStopOnRouteRequest {
+  string route_id = 1;
+  string student_profile_id = 2;
+}
+
+message GetStudentStopOnRouteResponse {
+  bool found = 1;
+  string route_id = 2;
+  string student_profile_id = 3;
+  string route_stop_id = 4;
+  string stop_id = 5;
+  string stop_name = 6;
+  // Ubicacion de la parada asignada (FR-5.2, FR-5.3): direccion legible para el
+  // texto de la notificacion y coordenadas para ubicarla. Campos nuevos,
+  // compatibles hacia atras.
+  string stop_address = 7;
+  double latitude = 8;
+  double longitude = 9;
+}
+
+message GetCurrentTripRequest {
+  string driver_id = 1;
+}
+
+message GetCurrentTripResponse {
+  bool found = 1;
+  string id = 2;
+  string bus_id = 3;
+  string driver_id = 4;
+  string status = 5;
+  string route_id = 6;
+}
