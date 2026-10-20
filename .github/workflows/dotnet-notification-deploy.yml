@@ -15,6 +15,6 @@ jobs:
     uses: school-guardian-project/.github/.github/workflows/deploy-dotnet.yml@main
     with:
       dockerfile_path: 'src/ms-notification.Api/Dockerfile'
-      app_name: 'notification-app'
+      app_name: 'ms-notification'
       host_port: 8080
     secrets: inherit
