@@ -1,5 +1,6 @@
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
+using ms_notification.Api.Application.Configuration;
 using ms_notification.Api.Application.Security;
 using ms_notification.Api.Application.UseCase;
 using ms_notification.Api.Domain.Port.In;
@@ -39,6 +40,11 @@ public static class ServiceCollectionExtensions
             };
             return new ProducerBuilder<string, string>(config).Build();
         });
+
+        // Ventana horaria del escaneo (ScanWindow__MarginMinutes /
+        // ScanWindow__TimeZoneId en .env). Reloj inyectable para probar la regla.
+        services.Configure<ScanWindowOptions>(configuration.GetSection(ScanWindowOptions.SectionName));
+        services.AddSingleton(TimeProvider.System);
 
         // El push lo comparten el consumidor de student.scanned y el de
         // incident.reported: el adaptador Expo va detras de IPushNotifier.

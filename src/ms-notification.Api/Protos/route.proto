@@ -226,4 +226,5 @@ message GetCurrentTripResponse {
   string bus_id = 3;
   string driver_id = 4;
   string status = 5;
+  string route_id = 6;
 }

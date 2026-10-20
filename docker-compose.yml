@@ -12,6 +12,17 @@ services:
     networks:
       - sg-services-network
 
+  ms-notification.tests:
+    container_name: ms-notification-tests
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    working_dir: /src
+    volumes:
+      - ./:/src
+    command: dotnet test ./tests/ms-notification.Tests/ --nologo
+    profiles: [ "tests" ]
+    networks:
+      - sg-services-network
+
 networks:
   sg-services-network:
     external: true

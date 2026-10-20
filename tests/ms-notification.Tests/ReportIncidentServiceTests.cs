@@ -57,7 +57,7 @@ public class ReportIncidentServiceTests
         _publisher = new RecordingEventPublisher();
         _routes = new FakeRouteDirectory
         {
-            CurrentTrip = new CurrentTrip(_tripId, Guid.NewGuid(), "InProgress")
+            CurrentTrip = new CurrentTrip(_tripId, Guid.NewGuid(), Guid.NewGuid(), "InProgress")
         };
         _family = new FakeFamilyDirectory();
         _school = new FakeSchoolDirectory { SchoolAdminProfileIds = new[] { _schoolAdmin } };

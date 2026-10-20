@@ -11,7 +11,13 @@ public interface IRouteDirectory
     Task<CurrentTrip?> GetCurrentTripAsync(Guid driverId, CancellationToken ct = default);
 }
 
-public sealed record StudentRouteInfo(Guid RouteId, string RouteName);
+// Ruta asignada del estudiante. Las horas viajan como HH:mm:ss desde ms-route y
+// se exponen como TimeOnly: son la ventana horaria que valida el escaneo.
+public sealed record StudentRouteInfo(
+    Guid RouteId,
+    string RouteName,
+    TimeOnly StartTime,
+    TimeOnly EndTime);
 
 // Ubicacion de la parada asignada que ms-route resuelve en el escaneo (FR-5.2,
 // FR-5.3). La direccion es la que se muestra al guardian; las coordenadas
@@ -24,4 +30,6 @@ public sealed record StudentStopOnRoute(
     double Latitude,
     double Longitude);
 
-public sealed record CurrentTrip(Guid Id, Guid BusId, string Status);
+// RouteId permite comparar el viaje del conductor con la ruta del estudiante:
+// sin el, un escaneo podia registrar en un viaje de otra ruta.
+public sealed record CurrentTrip(Guid Id, Guid RouteId, Guid BusId, string Status);
