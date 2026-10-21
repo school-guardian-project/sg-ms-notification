@@ -75,7 +75,8 @@ public class ProcessScanServiceTests
         // the student has an assigned stop with a known location, and the family
         // lookup succeeds.
         _routes.CurrentTrip = new CurrentTrip(_tripId, _routeId, Guid.NewGuid(), "IN_PROGRESS");
-        _routes.StudentRoute = new StudentRouteInfo(_routeId, "Ruta Mañana", RouteStart, RouteEnd);
+        _routes.StudentRoute = new StudentRouteInfo(_routeId, "Ruta Mañana", RouteStart, RouteEnd,
+            Array.Empty<StudentRouteSchedule>());
         _routes.StudentStopOnRoute = new StudentStopOnRoute(
             _routeStopId, _stopId, "Libertad", "Calle 12 #34-56", 4.6, -74.1);
         _family.ParentProfileIds = new[] { Guid.NewGuid() };
@@ -211,7 +212,8 @@ public class ProcessScanServiceTests
     [Test]
     public void AStudentFromAnotherRouteIsRejected()
     {
-        _routes.StudentRoute = new StudentRouteInfo(Guid.NewGuid(), "Ruta Tarde", RouteStart, RouteEnd);
+        _routes.StudentRoute = new StudentRouteInfo(Guid.NewGuid(), "Ruta Tarde", RouteStart, RouteEnd,
+            Array.Empty<StudentRouteSchedule>());
 
         var ex = Assert.ThrowsAsync<InvalidOperationException>(() => Scan(BoardingType.ON_BOARD));
 
@@ -243,6 +245,66 @@ public class ProcessScanServiceTests
         Assert.That(ex!.Message, Does.Contain("outside the route schedule window"));
         Assert.That(_context.Boardings.Count(), Is.EqualTo(0));
         Assert.That(_publisher.Published, Is.Empty);
+    }
+
+
+    [Test]
+    public async Task AScanWithinTodayScheduleIsAccepted()
+    {
+        // 10:30 Colombia (lunes): entre la salida 06:00 y el regreso 18:00,
+        // con 15 min de holgura cada lado ([05:45, 18:15]).
+        _routes.StudentRoute = new StudentRouteInfo(
+            _routeId, "Ruta Mañana", RouteStart, RouteEnd,
+            new[]
+            {
+                new StudentRouteSchedule(DayOfWeek.Monday, "Ida", new TimeOnly(6, 0)),
+                new StudentRouteSchedule(DayOfWeek.Monday, "Vuelta", new TimeOnly(18, 0))
+            });
+
+        var response = await Scan(BoardingType.ON_BOARD);
+
+        Assert.That(response.AlreadyProcessed, Is.False);
+        Assert.That(_context.Boardings.Count(), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void AScanOnANonOperationalDayIsRejected()
+    {
+        // Martes 10:30 CO: la ruta solo tiene schedule el lunes.
+        _clock.SetUtcNow(new DateTimeOffset(2026, 3, 17, 15, 30, 0, TimeSpan.Zero));
+
+        _routes.StudentRoute = new StudentRouteInfo(
+            _routeId, "Ruta Mañana", RouteStart, RouteEnd,
+            new[]
+            {
+                new StudentRouteSchedule(DayOfWeek.Monday, "Ida", new TimeOnly(6, 0)),
+                new StudentRouteSchedule(DayOfWeek.Monday, "Vuelta", new TimeOnly(18, 0))
+            });
+
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => Scan(BoardingType.ON_BOARD));
+
+        Assert.That(ex!.Message, Does.Contain("no schedule for today"));
+        Assert.That(_context.Boardings.Count(), Is.EqualTo(0));
+    }
+
+    [Test]
+    public void AScanOutsideTodayScheduleIsRejected()
+    {
+        // Lunes 04:00 CO: antes de la primera salida (06:00 - 15 min = 05:45).
+        _clock.SetUtcNow(new DateTimeOffset(2026, 3, 16, 09, 0, 0, TimeSpan.Zero));
+
+        _routes.StudentRoute = new StudentRouteInfo(
+            _routeId, "Ruta Mañana", RouteStart, RouteEnd,
+            new[]
+            {
+                new StudentRouteSchedule(DayOfWeek.Monday, "Ida", new TimeOnly(6, 0)),
+                new StudentRouteSchedule(DayOfWeek.Monday, "Vuelta", new TimeOnly(18, 0))
+            });
+
+        var ex = Assert.ThrowsAsync<InvalidOperationException>(() => Scan(BoardingType.ON_BOARD));
+
+        Assert.That(ex!.Message, Does.Contain("outside the route schedule window"));
+        Assert.That(_context.Boardings.Count(), Is.EqualTo(0));
     }
 
 

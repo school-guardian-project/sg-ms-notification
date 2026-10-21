@@ -12,12 +12,23 @@ public interface IRouteDirectory
 }
 
 // Ruta asignada del estudiante. Las horas viajan como HH:mm:ss desde ms-route y
-// se exponen como TimeOnly: son la ventana horaria que valida el escaneo.
+// se exponen como TimeOnly. Con los schedules (dia + direccion + hora de salida)
+// la ventana de escaneo se valida contra el dia operativo; StartTime/EndTime del
+// par grueso quedan como respaldo cuando la ruta no tiene schedules.
 public sealed record StudentRouteInfo(
     Guid RouteId,
     string RouteName,
     TimeOnly StartTime,
-    TimeOnly EndTime);
+    TimeOnly EndTime,
+    IReadOnlyList<StudentRouteSchedule> Schedules);
+
+// Horario de la ruta: un dia de la semana, la direccion (Ida/Vuelta) y la hora
+// de salida. ms-route lo envia como DayOfWeek.ToString() ("Monday", ...), que es
+// el enum .NET; se parsea de vuelta al comparar contra el dia local de Colombia.
+public sealed record StudentRouteSchedule(
+    DayOfWeek DayOfWeek,
+    string Direction,
+    TimeOnly StartTime);
 
 // Ubicacion de la parada asignada que ms-route resuelve en el escaneo (FR-5.2,
 // FR-5.3). La direccion es la que se muestra al guardian; las coordenadas
