@@ -122,6 +122,16 @@ message GetStudentRouteResponse {
   string start_time = 6;
   string end_time = 7;
   repeated StopItem stops = 8;
+  // Horarios de la ruta por dia y direccion (Ida/Vuelta). El escaneo valida la
+  // ventana contra el schedule del dia local, no contra el par grueso
+  // start_time/end_time, que ignora que una ruta solo opera ciertos dias.
+  repeated ScheduleItem schedules = 9;
+}
+
+message ScheduleItem {
+  string day_of_week = 1;
+  string direction = 2;
+  string start_time = 3;
 }
 
 message StartTripRequest {

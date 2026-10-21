@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ms_notification.Api.Application.Configuration;
@@ -161,19 +162,64 @@ public class ProcessScanService : IProcessScanUseCase
     }
 
     /// <summary>
-    /// El escaneo se acepta dentro de la jornada de la ruta con la holgura
-    /// configurada, en la zona horaria de la operacion (Colombia). Se calcula
-    /// sobre minutos del dia para cubrir de forma segura una ruta que cruza la
-    /// medianoche (end_time menor que start_time).
+    /// El escaneo se acepta dentro de la jornada operativa de la ruta con la
+    /// holgura configurada, en la zona horaria de la operacion (Colombia).
+    ///
+    /// La ventana se arma con los SCHEDULES del dia local:
+    ///   - Si la ruta tiene schedules y ninguno es del dia de hoy -> no opera,
+    ///     el escaneo se rechaza.
+    ///   - Si tiene schedules de hoy -> la ventana va de la primera salida al
+    ///     ultimo regreso del dia, ampliados +/- MarginMinutes a cada lado.
+    ///   - Si la ruta NO trae schedules (datos viejos sin migrar) se cae al par
+    ///     grueso StartTime/EndTime, preservando el comportamiento anterior.
+    ///
+    /// Todo se calcula sobre minutos del dia con aritmetica modular, asi cubrimos
+    /// la ruta que cruza la medianoche y la holgura que empuja la ventana fuera
+    /// de [0, 1440).
     /// </summary>
     private void EnsureWithinSchedule(StudentRouteInfo route)
     {
         var localNow = TimeZoneInfo.ConvertTime(_clock.GetUtcNow(), _timeZone);
         var nowMinutes = localNow.Hour * 60 + localNow.Minute;
+        var margin = _window.MarginMinutes;
 
+        if (route.Schedules is not null && route.Schedules.Count > 0)
+        {
+            var todays = route.Schedules
+                .Where(s => s.DayOfWeek == localNow.DayOfWeek)
+                .Select(s => s.StartTime.Hour * 60 + s.StartTime.Minute)
+                .ToList();
+
+            // La ruta no programa servicio para el dia local: fuera de operacion.
+            if (todays.Count == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Route {route.RouteId} has no schedule for today ({localNow:ddd}); scan rejected");
+            }
+
+            var opensAt = todays.Min() - margin;
+            var closesAt = todays.Max() + margin;
+
+            var nowMod = Mod(nowMinutes);
+            var from = Mod(opensAt);
+            var to = Mod(closesAt);
+
+            var within = from <= to
+                ? nowMod >= from && nowMod <= to
+                : nowMod >= from || nowMod <= to;
+
+            if (!within)
+            {
+                throw new InvalidOperationException(
+                    "Scan is outside the route schedule window");
+            }
+
+            return;
+        }
+
+        // ---------- Respaldo: ruta sin schedules (par grueso StartTime/EndTime) ----------
         var startMinutes = route.StartTime.Hour * 60 + route.StartTime.Minute;
         var endMinutes = route.EndTime.Hour * 60 + route.EndTime.Minute;
-        var margin = _window.MarginMinutes;
 
         // Sin jornada resoluble (TimeOnly.MinValue, dato inesperado de ms-route)
         // la ventana no restringe: la operacion del conductor no se bloquea por
@@ -183,21 +229,18 @@ public class ProcessScanService : IProcessScanUseCase
             return;
         }
 
-        var opensAt = startMinutes - margin;
-        var closesAt = endMinutes + margin;
+        var opensAtLegacy = startMinutes - margin;
+        var closesAtLegacy = endMinutes + margin;
 
-        // Se compara en minutos del dia con aritmetica modular: cubre la ruta
-        // normal (start < end) y la que cruza medianoche (end < start), ademas de
-        // la holgura que empuja la ventana fuera del dia [0, 1440).
-        var nowMod = Mod(nowMinutes);
-        var from = Mod(opensAt);
-        var to = Mod(closesAt);
+        var nowModLegacy = Mod(nowMinutes);
+        var fromLegacy = Mod(opensAtLegacy);
+        var toLegacy = Mod(closesAtLegacy);
 
-        var within = from <= to
-            ? nowMod >= from && nowMod <= to
-            : nowMod >= from || nowMod <= to;
+        var withinLegacy = fromLegacy <= toLegacy
+            ? nowModLegacy >= fromLegacy && nowModLegacy <= toLegacy
+            : nowModLegacy >= fromLegacy || nowModLegacy <= toLegacy;
 
-        if (!within)
+        if (!withinLegacy)
         {
             throw new InvalidOperationException(
                 "Scan is outside the route schedule window");
