@@ -20,6 +20,12 @@ public class StudentDirectory : IStudentDirectory
 
     public async Task<string?> GetStudentNameAsync(Guid studentProfileId, CancellationToken ct = default)
     {
+        var info = await GetStudentByProfileIdAsync(studentProfileId, ct);
+        return info?.FullName;
+    }
+
+    public async Task<IStudentDirectory.StudentInfo?> GetStudentByProfileIdAsync(Guid studentProfileId, CancellationToken ct = default)
+    {
         var profile = await _context.Set<ProfileRefEntity>()
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == studentProfileId, ct);
@@ -38,6 +44,10 @@ public class StudentDirectory : IStudentDirectory
             return null;
         }
 
-        return $"{person.Name} {person.LastName}".Trim();
+        return new IStudentDirectory.StudentInfo(
+            ProfileId: studentProfileId,
+            FullName: $"{person.Name} {person.LastName}".Trim(),
+            Email: person.Email,
+            Phone: person.Phone.ToString());
     }
 }

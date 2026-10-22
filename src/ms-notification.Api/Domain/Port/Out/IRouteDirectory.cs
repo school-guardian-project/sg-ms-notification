@@ -9,6 +9,8 @@ public interface IRouteDirectory
         Guid routeId, Guid studentProfileId, CancellationToken ct = default);
 
     Task<CurrentTrip?> GetCurrentTripAsync(Guid driverId, CancellationToken ct = default);
+
+    Task<RouteInfo?> GetRouteByExecutionIdAsync(Guid routeExecutionId, CancellationToken ct = default);
 }
 
 // Ruta asignada del estudiante. Las horas viajan como HH:mm:ss desde ms-route y
@@ -44,3 +46,8 @@ public sealed record StudentStopOnRoute(
 // RouteId permite comparar el viaje del conductor con la ruta del estudiante:
 // sin el, un escaneo podia registrar en un viaje de otra ruta.
 public sealed record CurrentTrip(Guid Id, Guid RouteId, Guid BusId, string Status);
+
+// Información básica de la ruta para el dashboard.
+public sealed record RouteInfo(
+    Guid RouteId,
+    string RouteName);

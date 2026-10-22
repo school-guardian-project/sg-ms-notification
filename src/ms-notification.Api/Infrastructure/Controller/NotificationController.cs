@@ -3,6 +3,7 @@ using Grpc.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Port.In;
 
 namespace ms_notification.Api.Infrastructure.Controller;
@@ -12,25 +13,39 @@ namespace ms_notification.Api.Infrastructure.Controller;
 public class NotificationController : ControllerBase
 {
     private const string DriverRoleId = "3";
+    private const string AdminRoleId = "1";
+    private const string SuperAdminRoleId = "5";
 
     private readonly IProcessScanUseCase _processScanService;
     private readonly IGetGuardianNotificationsUseCase _guardianNotificationsService;
     private readonly IRegisterDeviceUseCase _registerDeviceService;
     private readonly IGetStudentCredentialUseCase _credentialService;
     private readonly IReportIncidentUseCase _reportIncidentService;
+    private readonly IGetAlertsUseCase _getAlertsService;
+    private readonly IGetIncidentsUseCase _getIncidentsService;
+    private readonly IAcknowledgeAlertUseCase _acknowledgeAlertService;
+    private readonly IResolveIncidentUseCase _resolveIncidentService;
 
     public NotificationController(
         IProcessScanUseCase processScanService,
         IGetGuardianNotificationsUseCase guardianNotificationsService,
         IRegisterDeviceUseCase registerDeviceService,
         IGetStudentCredentialUseCase credentialService,
-        IReportIncidentUseCase reportIncidentService)
+        IReportIncidentUseCase reportIncidentService,
+        IGetAlertsUseCase getAlertsService,
+        IGetIncidentsUseCase getIncidentsService,
+        IAcknowledgeAlertUseCase acknowledgeAlertService,
+        IResolveIncidentUseCase resolveIncidentService)
     {
         _processScanService = processScanService;
         _guardianNotificationsService = guardianNotificationsService;
         _registerDeviceService = registerDeviceService;
         _credentialService = credentialService;
         _reportIncidentService = reportIncidentService;
+        _getAlertsService = getAlertsService;
+        _getIncidentsService = getIncidentsService;
+        _acknowledgeAlertService = acknowledgeAlertService;
+        _resolveIncidentService = resolveIncidentService;
     }
 
     [EnableRateLimiting("writes")]
@@ -54,12 +69,10 @@ public class NotificationController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            // Regla de negocio (sin viaje, sin asignacion, token invalido): 409.
             return Conflict(new { message = ex.Message });
         }
         catch (RpcException)
         {
-            // No se pudo verificar contra otro servicio: 503, no 500.
             return StatusCode(StatusCodes.Status503ServiceUnavailable);
         }
     }
@@ -86,13 +99,10 @@ public class NotificationController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            // Regla de negocio (sin viaje activo, tipo desconocido, descripcion
-            // demasiado larga): 409.
             return Conflict(new { message = ex.Message });
         }
         catch (RpcException)
         {
-            // No se pudo verificar contra otro servicio: 503, no 500.
             return StatusCode(StatusCodes.Status503ServiceUnavailable);
         }
     }
@@ -148,4 +158,113 @@ public class NotificationController : ControllerBase
 
     private Guid CurrentProfileId() =>
         Guid.TryParse(User.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
+
+    private bool IsAdminOrSuperAdmin() =>
+        User.FindFirstValue("roleId") == AdminRoleId || User.FindFirstValue("roleId") == SuperAdminRoleId;
+
+    [HttpGet("alerts")]
+    public async Task<IActionResult> GetAlerts(
+        [FromQuery] int page = 0,
+        [FromQuery] int size = 10,
+        [FromQuery] string sort = "timestamp,desc",
+        [FromQuery] BoardingType? alertType = null,
+        [FromQuery] bool? acknowledged = null,
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
+    {
+        if (!IsAdminOrSuperAdmin())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var filters = new AlertFilters
+        {
+            Page = page,
+            Size = size,
+            Sort = sort,
+            AlertType = alertType,
+            Acknowledged = acknowledged,
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            Search = search
+        };
+
+        var result = await _getAlertsService.ExecuteAsync(filters, ct);
+        return Ok(result);
+    }
+
+    [HttpPost("alerts/{alertId:guid}/acknowledge")]
+    public async Task<IActionResult> AcknowledgeAlert(Guid alertId, CancellationToken ct)
+    {
+        if (!IsAdminOrSuperAdmin())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        try
+        {
+            await _acknowledgeAlertService.ExecuteAsync(alertId, ct);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
+
+    [HttpGet("incidents")]
+    public async Task<IActionResult> GetIncidents(
+        [FromQuery] int page = 0,
+        [FromQuery] int size = 10,
+        [FromQuery] string sort = "reportedAt,desc",
+        [FromQuery] IncidentType? incidentType = null,
+        [FromQuery] IncidentSeverity? severity = null,
+        [FromQuery] IncidentStatus? status = null,
+        [FromQuery] DateTime? dateFrom = null,
+        [FromQuery] DateTime? dateTo = null,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
+    {
+        if (!IsAdminOrSuperAdmin())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var filters = new IncidentFilters
+        {
+            Page = page,
+            Size = size,
+            Sort = sort,
+            IncidentType = incidentType,
+            Severity = severity,
+            Status = status,
+            DateFrom = dateFrom,
+            DateTo = dateTo,
+            Search = search
+        };
+
+        var result = await _getIncidentsService.ExecuteAsync(filters, ct);
+        return Ok(result);
+    }
+
+    [HttpPost("incidents/{incidentId:guid}/resolve")]
+    public async Task<IActionResult> ResolveIncident(Guid incidentId, CancellationToken ct)
+    {
+        if (!IsAdminOrSuperAdmin())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        try
+        {
+            await _resolveIncidentService.ExecuteAsync(incidentId, ct);
+            return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
+    }
 }

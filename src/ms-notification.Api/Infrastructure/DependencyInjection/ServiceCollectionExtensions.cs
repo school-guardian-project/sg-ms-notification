@@ -1,6 +1,8 @@
+using AutoMapper;
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.Configuration;
+using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Application.Security;
 using ms_notification.Api.Application.UseCase;
 using ms_notification.Api.Domain.Port.In;
@@ -71,6 +73,19 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISchoolDirectory, SchoolDirectory>();
 
         services.AddSingleton<QrTokenSigner>();
+
+        // AutoMapper
+        services.AddAutoMapper(cfg =>
+        {
+            cfg.AddProfile<AlertProfile>();
+            cfg.AddProfile<IncidentProfile>();
+        });
+
+        // Casos de uso adicionales para dashboard admin
+        services.AddScoped<IGetAlertsUseCase, GetAlertsService>();
+        services.AddScoped<IGetIncidentsUseCase, GetIncidentsService>();
+        services.AddScoped<IAcknowledgeAlertUseCase, AcknowledgeAlertService>();
+        services.AddScoped<IResolveIncidentUseCase, ResolveIncidentService>();
 
         return services;
     }
