@@ -86,6 +86,25 @@ public sealed class RouteGrpcClient : IRouteDirectory, IDisposable
             : null;
     }
 
+    public async Task<RouteInfo?> GetRouteByExecutionIdAsync(Guid routeExecutionId, CancellationToken ct = default)
+    {
+        try
+        {
+            var response = await _client.GetRouteByExecutionIdAsync(
+                new GetRouteByExecutionIdRequest { ExecutionId = routeExecutionId.ToString() },
+                deadline: DateTime.UtcNow.Add(Timeout),
+                cancellationToken: ct);
+
+            return response.Found
+                ? new RouteInfo(Guid.Parse(response.RouteId), response.RouteName)
+                : null;
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
     /// <summary>
     /// HH:mm:ss desde ms-route. Si el valor falta o no parsea la ventana horaria
     /// queda abierta (TimeOnly.MinValue..MaxValue) en vez de bloquear la operacion

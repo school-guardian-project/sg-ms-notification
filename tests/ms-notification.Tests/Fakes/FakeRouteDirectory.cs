@@ -11,6 +11,7 @@ internal sealed class FakeRouteDirectory : IRouteDirectory
     public StudentRouteInfo? StudentRoute { get; set; }
     public StudentStopOnRoute? StudentStopOnRoute { get; set; }
     public CurrentTrip? CurrentTrip { get; set; }
+    public RouteInfo? RouteByExecutionId { get; set; }
 
     public Task<StudentRouteInfo?> GetStudentRouteAsync(
         Guid studentProfileId, CancellationToken ct = default)
@@ -22,4 +23,7 @@ internal sealed class FakeRouteDirectory : IRouteDirectory
 
     public Task<CurrentTrip?> GetCurrentTripAsync(Guid driverId, CancellationToken ct = default)
         => Task.FromResult(CurrentTrip);
+
+    public Task<RouteInfo?> GetRouteByExecutionIdAsync(Guid routeExecutionId, CancellationToken ct = default)
+        => Task.FromResult(RouteByExecutionId);
 }
