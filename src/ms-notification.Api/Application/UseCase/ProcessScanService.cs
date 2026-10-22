@@ -221,12 +221,14 @@ public class ProcessScanService : IProcessScanUseCase
         var startMinutes = route.StartTime.Hour * 60 + route.StartTime.Minute;
         var endMinutes = route.EndTime.Hour * 60 + route.EndTime.Minute;
 
-        // Sin jornada resoluble (TimeOnly.MinValue, dato inesperado de ms-route)
-        // la ventana no restringe: la operacion del conductor no se bloquea por
-        // un dato que no se pudo leer.
+        // Sin schedules Y sin jornada gruesa resoluble (TimeOnly.MinValue): no hay
+        // ventana conocida -> se rechaza el escaneo. Antes esto era fail-open y
+        // dejaba pasar todo; ahora que todas las rutas deberian tener schedules
+        // el caso legacy es un dato corrupto que no debe silenciarse.
         if (startMinutes == 0 && endMinutes == 0)
         {
-            return;
+            throw new InvalidOperationException(
+                "Route has no schedule and no coarse window; scan rejected");
         }
 
         var opensAtLegacy = startMinutes - margin;
