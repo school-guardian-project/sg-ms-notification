@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.RouteDirectory;
 using ms_notification.Api.Application.UseCase;
 using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Event;

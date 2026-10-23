@@ -6,7 +6,6 @@ using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Model;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Domain.Port.Out;
-using ms_notification.Api.Infrastructure.Messaging.Kafka;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 
 namespace ms_notification.Api.Application.UseCase;

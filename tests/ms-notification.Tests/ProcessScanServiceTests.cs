@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using ms_notification.Api.Application.Configuration;
 using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.RouteDirectory;
 using ms_notification.Api.Application.Security;
 using ms_notification.Api.Application.UseCase;
 using ms_notification.Api.Domain.Enum;
