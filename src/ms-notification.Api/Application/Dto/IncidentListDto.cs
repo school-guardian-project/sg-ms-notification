@@ -22,31 +22,3 @@ public class IncidentListDto
     public DateTime? ResolvedAt { get; set; }
     public string? ResolvedBy { get; set; }
 }
-
-/// <summary>
-/// Respuesta paginada de incidentes.
-/// </summary>
-public class IncidentsResponse
-{
-    public IncidentListDto[] Content { get; set; } = Array.Empty<IncidentListDto>();
-    public int TotalElements { get; set; }
-    public int TotalPages { get; set; }
-    public int Size { get; set; }
-    public int Number { get; set; }
-}
-
-/// <summary>
-/// Filtros para listado de incidentes.
-/// </summary>
-public class IncidentFilters
-{
-    public int Page { get; set; } = 0;
-    public int Size { get; set; } = 10;
-    public string Sort { get; set; } = "reportedAt,desc";
-    public IncidentType? IncidentType { get; set; }
-    public IncidentSeverity? Severity { get; set; }
-    public IncidentStatus? Status { get; set; }
-    public DateTime? DateFrom { get; set; }
-    public DateTime? DateTo { get; set; }
-    public string? Search { get; set; }
-}

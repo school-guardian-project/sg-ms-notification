@@ -1,18 +1,9 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Options;
 
 namespace ms_notification.Api.Infrastructure.Security;
-
-/// <summary>
-/// Opciones del esquema de autenticacion basado en las cabeceras del gateway.
-/// </summary>
-public sealed class GatewayAuthenticationOptions : AuthenticationSchemeOptions
-{
-}
 
 /// <summary>
 /// Esquema de autenticacion que confia en las cabeceras X-User-* inyectadas por
@@ -91,56 +82,5 @@ public sealed class GatewayAuthenticationHandler : AuthenticationHandler<Gateway
         }
 
         return header.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-    }
-}
-
-/// <summary>
-/// Exige que la peticion incluya el permiso indicado (FR-2.1). El permiso viaja
-/// como cabecera X-User-Permissions que el gateway deriva del claim
-/// permissions[] del access token.
-/// </summary>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
-public sealed class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
-{
-    private readonly string _permission;
-
-    public RequirePermissionAttribute(string permission)
-    {
-        _permission = permission;
-    }
-
-    public Task OnAuthorizationAsync(AuthorizationFilterContext context)
-    {
-        var user = context.HttpContext.User;
-        if (user?.Identity?.IsAuthenticated != true)
-        {
-            context.Result = new UnauthorizedResult();
-            return Task.CompletedTask;
-        }
-
-        if (!user.HasClaim(GatewayAuthenticationHandler.PermissionClaimType, _permission))
-        {
-            context.Result = new ObjectResult(new { message = "Forbidden" })
-            {
-                StatusCode = StatusCodes.Status403Forbidden,
-            };
-        }
-
-        return Task.CompletedTask;
-    }
-}
-
-public static class GatewayAuthenticationExtensions
-{
-    /// <summary>
-    /// Registra el esquema "Gateway" como esquema de autenticacion por defecto.
-    /// </summary>
-    public static IServiceCollection AddGatewayAuthentication(this IServiceCollection services)
-    {
-        services.AddAuthentication(GatewayAuthenticationHandler.SchemeName)
-            .AddScheme<GatewayAuthenticationOptions, GatewayAuthenticationHandler>(
-                GatewayAuthenticationHandler.SchemeName, _ => { });
-
-        return services;
     }
 }

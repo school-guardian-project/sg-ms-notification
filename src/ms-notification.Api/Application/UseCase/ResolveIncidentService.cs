@@ -25,7 +25,7 @@ public class ResolveIncidentService : IResolveIncidentUseCase
         }
 
         // Verificar que sea un incidente (no boarding/alighting)
-        var incidentAlertTypeIds = new byte[] { 1, 2, 3, 4, 11, 13, 21, 23 };
+        var incidentAlertTypeIds = IncidentTypeFilter.AlertTypeIds;
         if (!incidentAlertTypeIds.Contains(alert.AlertTypeId))
         {
             throw new InvalidOperationException("Alert is not an incident");

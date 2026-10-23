@@ -1,3 +1,4 @@
+using ms_notification.Api.Application.Dto.RouteDirectory;
 using ms_notification.Api.Domain.Port.Out;
 
 namespace ms_notification.Tests.Fakes;

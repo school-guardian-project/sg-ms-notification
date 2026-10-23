@@ -77,7 +77,6 @@ public static class ServiceCollectionExtensions
         // AutoMapper
         services.AddAutoMapper(cfg =>
         {
-            cfg.AddProfile<AlertProfile>();
             cfg.AddProfile<IncidentProfile>();
         });
 
@@ -86,6 +85,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IGetIncidentsUseCase, GetIncidentsService>();
         services.AddScoped<IAcknowledgeAlertUseCase, AcknowledgeAlertService>();
         services.AddScoped<IResolveIncidentUseCase, ResolveIncidentService>();
+        services.AddScoped<IGetAlertByIdUseCase, GetAlertByIdService>();
+        services.AddScoped<IGetIncidentByIdUseCase, GetIncidentByIdService>();
 
         return services;
     }

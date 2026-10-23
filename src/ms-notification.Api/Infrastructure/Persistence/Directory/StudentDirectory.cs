@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ms_notification.Api.Application.Dto;
 using ms_notification.Api.Domain.Port.Out;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 using ms_notification.Api.Infrastructure.Persistence.Entity;
@@ -24,7 +25,7 @@ public class StudentDirectory : IStudentDirectory
         return info?.FullName;
     }
 
-    public async Task<IStudentDirectory.StudentInfo?> GetStudentByProfileIdAsync(Guid studentProfileId, CancellationToken ct = default)
+    public async Task<StudentInfo?> GetStudentByProfileIdAsync(Guid studentProfileId, CancellationToken ct = default)
     {
         var profile = await _context.Set<ProfileRefEntity>()
             .AsNoTracking()
@@ -44,7 +45,7 @@ public class StudentDirectory : IStudentDirectory
             return null;
         }
 
-        return new IStudentDirectory.StudentInfo(
+        return new StudentInfo(
             ProfileId: studentProfileId,
             FullName: $"{person.Name} {person.LastName}".Trim(),
             Email: person.Email,

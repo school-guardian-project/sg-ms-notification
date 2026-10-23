@@ -31,7 +31,7 @@ public class GetIncidentsService : IGetIncidentsUseCase
     public async Task<IncidentsResponse> ExecuteAsync(IncidentFilters filters, CancellationToken ct = default)
     {
         // Filtramos solo alertas que son incidentes (no boarding/alighting)
-        var incidentAlertTypeIds = new byte[] { 1, 2, 3, 4, 11, 13, 21, 23 }; // Delay, Deviation, etc.
+        var incidentAlertTypeIds = IncidentTypeFilter.AlertTypeIds;
 
         var query = _context.Alerts
             .Where(a => incidentAlertTypeIds.Contains(a.AlertTypeId))
