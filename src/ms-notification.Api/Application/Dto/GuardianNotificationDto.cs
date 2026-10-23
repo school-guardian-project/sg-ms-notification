@@ -10,11 +10,3 @@ public class GuardianNotificationDto
     public BoardingType? BoardingType { get; set; }
     public AlertDetailDto Alert { get; set; } = new();
 }
-
-public class AlertDetailDto
-{
-    public Guid Id { get; set; }
-    public string? Description { get; set; }
-    public DateTime DateTime { get; set; }
-    public byte AlertTypeId { get; set; }
-}

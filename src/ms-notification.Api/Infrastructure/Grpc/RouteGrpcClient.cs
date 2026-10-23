@@ -1,6 +1,7 @@
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Extensions.Logging;
+using ms_notification.Api.Application.Dto.RouteDirectory;
 using ms_notification.Api.Domain.Port.Out;
 
 namespace ms_notification.Api.Infrastructure.Grpc;
@@ -38,7 +39,8 @@ public sealed class RouteGrpcClient : IRouteDirectory, IDisposable
                 Guid.Parse(response.Id),
                 response.Name,
                 ParseTime(response.StartTime),
-                ParseTime(response.EndTime));
+                ParseTime(response.EndTime),
+                ParseSchedules(response.Schedules));
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
         {
@@ -85,6 +87,25 @@ public sealed class RouteGrpcClient : IRouteDirectory, IDisposable
             : null;
     }
 
+    public async Task<RouteInfo?> GetRouteByExecutionIdAsync(Guid routeExecutionId, CancellationToken ct = default)
+    {
+        try
+        {
+            var response = await _client.GetRouteByExecutionIdAsync(
+                new GetRouteByExecutionIdRequest { ExecutionId = routeExecutionId.ToString() },
+                deadline: DateTime.UtcNow.Add(Timeout),
+                cancellationToken: ct);
+
+            return response.Found
+                ? new RouteInfo(Guid.Parse(response.RouteId), response.RouteName)
+                : null;
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
     /// <summary>
     /// HH:mm:ss desde ms-route. Si el valor falta o no parsea la ventana horaria
     /// queda abierta (TimeOnly.MinValue..MaxValue) en vez de bloquear la operacion
@@ -99,6 +120,40 @@ public sealed class RouteGrpcClient : IRouteDirectory, IDisposable
 
         _logger.LogWarning("ms-route returned an unparseable time '{Value}'; the scan window stays open", value);
         return TimeOnly.MinValue;
+    }
+
+    /// <summary>
+    /// Horarios por dia (Ida/Vuelta). Un schedule que no parsea se descarta con
+    /// warning: no vale la pena tumbar el escaneo por una fila corrupta, y al
+    /// final siempre queda el respaldo del par grueso start_time/end_time.
+    /// </summary>
+    private IReadOnlyList<StudentRouteSchedule> ParseSchedules(
+        IEnumerable<ScheduleItem> schedules)
+    {
+        var parsed = new List<StudentRouteSchedule>();
+
+        foreach (var schedule in schedules)
+        {
+            if (!Enum.TryParse<DayOfWeek>(schedule.DayOfWeek, ignoreCase: true, out var day))
+            {
+                _logger.LogWarning(
+                    "ms-route returned an unparseable day_of_week '{Value}'; the schedule is skipped",
+                    schedule.DayOfWeek);
+                continue;
+            }
+
+            if (!TimeOnly.TryParse(schedule.StartTime, out var start))
+            {
+                _logger.LogWarning(
+                    "ms-route returned an unparseable schedule start_time '{Value}'; the schedule is skipped",
+                    schedule.StartTime);
+                continue;
+            }
+
+            parsed.Add(new StudentRouteSchedule(day, schedule.Direction, start));
+        }
+
+        return parsed;
     }
 
     private Guid ParseId(string value, string field)

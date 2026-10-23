@@ -1,12 +1,8 @@
 using System.Text.Json;
 using Confluent.Kafka;
+using ms_notification.Api.Domain.Port.Out;
 
 namespace ms_notification.Api.Infrastructure.Messaging.Kafka;
-
-public interface IEventPublisher
-{
-    Task PublishAsync<T>(string topic, T @event);
-}
 
 public class KafkaEventPublisher : IEventPublisher
 {
