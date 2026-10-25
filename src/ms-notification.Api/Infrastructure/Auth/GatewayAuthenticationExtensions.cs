@@ -3,7 +3,7 @@ namespace ms_notification.Api.Infrastructure.Auth;
 public static class GatewayAuthenticationExtensions
 {
     /// <summary>
-    /// Registra el esquema "Gateway" como esquema de autenticacion por defecto.
+    /// Registra el esquema "Gateway" como esquema de autenticación por defecto.
     /// </summary>
     public static IServiceCollection AddGatewayAuthentication(this IServiceCollection services)
     {
