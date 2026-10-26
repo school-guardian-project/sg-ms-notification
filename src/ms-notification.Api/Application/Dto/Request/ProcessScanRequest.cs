@@ -16,8 +16,9 @@ public sealed class ProcessScanRequest
     public string QrToken { get; init; } = string.Empty;
 
     /// <summary>
-    /// Type of boarding (OnBoard or OffBoard).
+    /// Tipo de movimiento (ON_BOARD/OFF_BOARD). Opcional: si el cliente no lo
+    /// envía, el backend lo deduce del estado del viaje (nunca abordó -> sube,
+    /// a bordo -> baja, ya descendió -> reingreso).
     /// </summary>
-    [Required]
-    public BoardingType BoardingType { get; init; }
+    public BoardingType? BoardingType { get; init; }
 }

@@ -1,3 +1,5 @@
+using ms_notification.Api.Domain.Enum;
+
 namespace ms_notification.Api.Application.Dto.Response;
 
 /// <summary>
@@ -7,8 +9,10 @@ namespace ms_notification.Api.Application.Dto.Response;
 /// <param name="AlertId">Created alert identifier.</param>
 /// <param name="ParentsNotified">Number of parents notified.</param>
 /// <param name="AlreadyProcessed">True when the scan was already processed (idempotent).</param>
+/// <param name="BoardingType">Movement type resolved by the backend (ON_BOARD/OFF_BOARD).</param>
 public sealed record ProcessScanResponse(
     Guid BoardingId,
     Guid AlertId,
     int ParentsNotified,
-    bool AlreadyProcessed = false);
+    bool AlreadyProcessed = false,
+    BoardingType BoardingType = BoardingType.ON_BOARD);

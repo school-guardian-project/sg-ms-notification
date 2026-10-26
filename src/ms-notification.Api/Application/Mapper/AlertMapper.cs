@@ -24,7 +24,7 @@ public sealed class AlertMapper : IAlertMapper
             alert.ProfileId,
             student?.FullName ?? "Desconocido",
             route?.RouteName ?? "Sin ruta",
-            (ms_notification.Api.Domain.Enum.BoardingType)alert.AlertTypeId,
+            BoardingTypeOf(alert.AlertTypeId),
             alert.Description ?? string.Empty,
             alert.DateTime,
             alert.AcknowledgedAt.HasValue,
@@ -40,4 +40,15 @@ public sealed class AlertMapper : IAlertMapper
             alert.DateTime,
             alert.AlertTypeId);
     }
+
+    // 25/26 son los ids de escaneo del catalogo (007-insert-boarding-alert-types.sql).
+    // El resto de ids no es un escaneo: el cast directo producia valores fuera
+    // del enum (1 era 'Bus Delay', no ON_BOARD).
+    private static ms_notification.Api.Domain.Enum.BoardingType BoardingTypeOf(byte alertTypeId)
+        => alertTypeId switch
+        {
+            25 => ms_notification.Api.Domain.Enum.BoardingType.ON_BOARD,
+            26 => ms_notification.Api.Domain.Enum.BoardingType.OFF_BOARD,
+            _ => (ms_notification.Api.Domain.Enum.BoardingType)alertTypeId
+        };
 }

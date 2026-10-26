@@ -20,6 +20,7 @@ public sealed class ScanResponseMapper : IScanResponseMapper
             boarding.Id,
             alert.Id,
             parentsNotified,
-            alreadyProcessed);
+            alreadyProcessed,
+            boarding.BoardingType);
     }
 }
