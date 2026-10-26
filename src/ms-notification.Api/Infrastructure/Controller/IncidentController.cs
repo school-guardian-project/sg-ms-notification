@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
 using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Security;
@@ -26,7 +26,7 @@ public class IncidentController : ControllerBase
 
     [HttpGet("incidents")]
     [RequireRole(RequireRoleAttribute.AdminRoleId, RequireRoleAttribute.SuperAdminRoleId)]
-    public async Task<IActionResult> GetIncidents(
+    public async Task<ActionResult<ms_notification.Api.Application.Dto.Response.IncidentsResponse>> GetIncidents(
         [FromQuery] int page = 0,
         [FromQuery] int size = 10,
         [FromQuery] string sort = "reportedAt,desc",
@@ -72,7 +72,7 @@ public class IncidentController : ControllerBase
 
     [HttpGet("incidents/{incidentId:guid}")]
     [RequireRole(RequireRoleAttribute.AdminRoleId, RequireRoleAttribute.SuperAdminRoleId)]
-    public async Task<IActionResult> GetIncidentById(Guid incidentId, CancellationToken ct)
+    public async Task<ActionResult<ms_notification.Api.Application.Dto.Response.IncidentListResponse>> GetIncidentById(Guid incidentId, CancellationToken ct)
     {
         var incident = await _getIncidentByIdService.ExecuteAsync(incidentId, ct);
         if (incident is null)

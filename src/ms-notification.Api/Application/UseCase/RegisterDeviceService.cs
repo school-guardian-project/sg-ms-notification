@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
 using ms_notification.Api.Domain.Model;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Persistence.Context;
@@ -16,7 +16,7 @@ public class RegisterDeviceService : IRegisterDeviceUseCase
     }
 
     // El profileId viene del JWT, no del body: no confiamos en el cliente.
-    public async Task ExecuteAsync(Guid profileId, RegisterDeviceRequestDto request, CancellationToken ct = default)
+    public async Task ExecuteAsync(Guid profileId, RegisterDeviceRequest request, CancellationToken ct = default)
     {
         if (profileId == Guid.Empty)
         {

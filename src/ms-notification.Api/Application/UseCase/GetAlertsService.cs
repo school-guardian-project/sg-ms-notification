@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Model;
@@ -14,15 +15,18 @@ public class GetAlertsService : IGetAlertsUseCase
     private readonly NotificationContext _context;
     private readonly IStudentDirectory _studentDirectory;
     private readonly IRouteDirectory _routeDirectory;
+    private readonly IAlertMapper _alertMapper;
 
     public GetAlertsService(
         NotificationContext context,
         IStudentDirectory studentDirectory,
-        IRouteDirectory routeDirectory)
+        IRouteDirectory routeDirectory,
+        IAlertMapper alertMapper)
     {
         _context = context;
         _studentDirectory = studentDirectory;
         _routeDirectory = routeDirectory;
+        _alertMapper = alertMapper;
     }
 
     public async Task<AlertsResponse> ExecuteAsync(AlertFilters filters, CancellationToken ct = default)
@@ -75,23 +79,21 @@ public class GetAlertsService : IGetAlertsUseCase
             .ToListAsync(ct);
 
         // Resolver nombres de estudiantes y rutas - usando mapper pattern
-        var alertDtos = new List<AlertListDto>();
+        var alertDtos = new List<AlertListResponse>();
         foreach (var alert in alerts)
         {
             var student = await _studentDirectory.GetStudentByProfileIdAsync(alert.ProfileId, ct);
             var route = await _routeDirectory.GetRouteByExecutionIdAsync(alert.RouteExecutionId, ct);
 
-            alertDtos.Add(AlertListDtoMapper.ToDto(alert, student, route));
+            alertDtos.Add(_alertMapper.ToListResponse(alert, student, route));
         }
 
-        return new AlertsResponse
-        {
-            Content = alertDtos.ToArray(),
-            TotalElements = totalElements,
-            TotalPages = totalPages,
-            Size = filters.Size,
-            Number = filters.Page
-        };
+        return new AlertsResponse(
+            alertDtos.ToArray(),
+            totalElements,
+            totalPages,
+            filters.Size,
+            filters.Page);
     }
 
     private static (string field, string direction) ParseSort(string sort)

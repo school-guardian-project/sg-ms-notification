@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Model;
@@ -31,6 +32,7 @@ public class ReportIncidentService : IReportIncidentUseCase
     private readonly IFamilyDirectory _familyDirectory;
     private readonly ISchoolDirectory _schoolDirectory;
     private readonly ILogger<ReportIncidentService> _logger;
+    private readonly IIncidentMapper _incidentMapper;
 
     public ReportIncidentService(
         NotificationContext context,
@@ -38,7 +40,8 @@ public class ReportIncidentService : IReportIncidentUseCase
         IRouteDirectory routeDirectory,
         IFamilyDirectory familyDirectory,
         ISchoolDirectory schoolDirectory,
-        ILogger<ReportIncidentService> logger)
+        ILogger<ReportIncidentService> logger,
+        IIncidentMapper incidentMapper)
     {
         _context = context;
         _eventPublisher = eventPublisher;
@@ -46,10 +49,11 @@ public class ReportIncidentService : IReportIncidentUseCase
         _familyDirectory = familyDirectory;
         _schoolDirectory = schoolDirectory;
         _logger = logger;
+        _incidentMapper = incidentMapper;
     }
 
-    public async Task<IncidentResponseDto> ExecuteAsync(
-        Guid driverProfileId, ReportIncidentRequestDto request, CancellationToken ct = default)
+    public async Task<IncidentResponse> ExecuteAsync(
+        Guid driverProfileId, ReportIncidentRequest request, CancellationToken ct = default)
     {
         var description = request.Description?.Trim();
         if (description is { Length: > MaxDescriptionLength })
@@ -103,13 +107,7 @@ public class ReportIncidentService : IReportIncidentUseCase
             IncidentReportedTopic,
             IncidentReportedEventMapper.ToEvent(alert, studentsOnBoard, recipients));
 
-        return new IncidentResponseDto
-        {
-            AlertId = alert.Id,
-            RouteExecutionId = trip.Id,
-            StudentsOnBoard = studentsOnBoard.Count,
-            RecipientsNotified = recipients.Count
-        };
+        return _incidentMapper.ToResponse(alert, studentsOnBoard.Count, recipients.Count);
     }
 
     /// <summary>
