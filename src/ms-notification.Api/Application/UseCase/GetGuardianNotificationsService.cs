@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Application.Mapper;
+using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 
@@ -55,7 +56,9 @@ public class GetGuardianNotificationsService : IGetGuardianNotificationsUseCase
                     boarding?.DateTime ?? r.Alert.DateTime,
                     r.Alert.AlertTypeId);
 
-                return _notificationMapper.ToResponse(r.Recipient, alertDetail);
+                var boardingType = boarding?.BoardingType;
+
+                return _notificationMapper.ToResponse(r.Recipient, alertDetail, boardingType);
             })
             .OrderByDescending(n => n.Alert.DateTime)
             .ToList();

@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
 using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Domain.Enum;
