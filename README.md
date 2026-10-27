@@ -15,3 +15,9 @@ List entries include `alertTypeId` and `alertTypeName`.
 
 `GET /api/v1/notifications/alert-types` returns the database catalog as `{id,name}`
 entries for the administrator and superadministrator filter controls.
+
+Docker Compose defaults the required gRPC directories to `ms-route:5001` and
+`ms-user-management:5001` on `sg-services-network`. Override
+`Grpc__Route__Address` / `Grpc__Family__Address` in the environment when deploying
+those services elsewhere. SQL Server and the directories must be running before
+testing the populated alert list.
