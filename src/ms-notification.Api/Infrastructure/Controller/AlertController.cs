@@ -79,9 +79,19 @@ public class AlertController : ControllerBase
 
     [HttpGet("alert-types")]
     [RequireRole(RequireRoleAttribute.AdminRoleId, RequireRoleAttribute.SuperAdminRoleId)]
-    public async Task<IActionResult> GetAlertTypes(CancellationToken ct)
+    public async Task<IActionResult> GetAlertTypes(CancellationToken ct, [FromQuery] Guid? schoolId = null)
     {
+        var isAdmin = User.FindFirstValue("roleId") == RequireRoleAttribute.AdminRoleId;
+        var profileId = NotificationClaims.CurrentProfileId(User);
+        if (isAdmin && profileId == Guid.Empty)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
+        var usedTypeIds = _context.GetSchoolAlerts(isAdmin ? profileId : null, schoolId)
+            .Select(a => a.AlertTypeId);
         var types = await _context.AlertTypes.AsNoTracking()
+            .Where(t => usedTypeIds.Contains(t.Id))
             .OrderBy(t => t.Name)
             .Select(t => new { t.Id, t.Name })
             .ToListAsync(ct);

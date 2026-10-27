@@ -13,8 +13,13 @@ Optional query parameters: `schoolId` (only narrows the authorized scope),
 `dateFrom` and `dateTo`. Legacy `alertType=ON_BOARD|OFF_BOARD` remains supported.
 List entries include `alertTypeId` and `alertTypeName`.
 
-`GET /api/v1/notifications/alert-types` returns the database catalog as `{id,name}`
-entries for the administrator and superadministrator filter controls.
+`GET /api/v1/notifications/alert-types` returns distinct `{id,name}` catalog
+entries only for types used by persisted alerts in the authorized school scope.
+Unused catalog types and types used only by another school are excluded.
+Administrators use the same active school assignments as the alert list; the
+optional `schoolId` parameter can only narrow that scope. Superadministrators
+see types used across schools unless `schoolId` is supplied. Options are
+independent of text filters and pagination; no alerts means an empty type list.
 
 Docker Compose defaults the required gRPC directories to `ms-route:5001` and
 `ms-user-management:5001` on `sg-services-network`. Override

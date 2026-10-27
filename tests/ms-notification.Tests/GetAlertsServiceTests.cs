@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -135,6 +136,84 @@ public class GetAlertsServiceTests
         Assert.That(all.TotalElements, Is.EqualTo(3));
         var school = await _service.ExecuteAsync(new AlertFilters { SchoolId = _otherSchoolId });
         Assert.That(school.TotalElements, Is.EqualTo(1));
+    }
+
+    [Test]
+    public async Task TypeOptionsExcludeUnusedAndOtherSchoolOnlyTypesAndRemoveDuplicates()
+    {
+        _context.AlertTypes.AddRange(
+            new AlertType { Id = 2, Name = "Route Deviation" },
+            new AlertType { Id = 3, Name = "Unused type" });
+        AddAlert(AddProfile(_otherSchoolId), 2, "Other school only", 4);
+        AddAlert(_studentId, 1, "Repeated school type", 5);
+        await _context.SaveChangesAsync();
+
+        var result = await Controller("1", _adminId).GetAlertTypes(CancellationToken.None);
+        var types = JsonSerializer.SerializeToElement(((OkObjectResult)result).Value);
+
+        Assert.That(types.EnumerateArray().Select(t => t.GetProperty("Id").GetByte()),
+            Is.EqualTo(new byte[] { 1, 25 }));
+        Assert.That(types.EnumerateArray().Select(t => t.GetProperty("Name").GetString()),
+            Is.EqualTo(new[] { "Bus Delay", "On Board" }));
+    }
+
+    [Test]
+    public async Task TypeOptionsIncludeUsedTypesFromEverySchoolCampus()
+    {
+        _context.AlertTypes.Add(new AlertType { Id = 2, Name = "Route Deviation" });
+        AddAlert(AddProfile(_schoolId), 2, "Another campus", 4);
+        await _context.SaveChangesAsync();
+
+        var result = await Controller("1", _adminId).GetAlertTypes(CancellationToken.None);
+        var types = JsonSerializer.SerializeToElement(((OkObjectResult)result).Value);
+
+        Assert.That(types.EnumerateArray().Select(t => t.GetProperty("Id").GetByte()),
+            Is.EquivalentTo(new byte[] { 1, 2, 25 }));
+    }
+
+    [Test]
+    public async Task TypeOptionsAreEmptyWithoutAlertsOrAnActiveSchoolAssignment()
+    {
+        var missing = await Controller("1", Guid.NewGuid()).GetAlertTypes(CancellationToken.None);
+        Assert.That(JsonSerializer.SerializeToElement(((OkObjectResult)missing).Value).GetArrayLength(), Is.Zero);
+
+        _context.Set<SchoolAdminRefEntity>().Single().Status = "Inactive";
+        await _context.SaveChangesAsync();
+        var inactive = await Controller("1", _adminId).GetAlertTypes(CancellationToken.None);
+        Assert.That(JsonSerializer.SerializeToElement(((OkObjectResult)inactive).Value).GetArrayLength(), Is.Zero);
+
+        _context.Set<SchoolAdminRefEntity>().Single().Status = "Active";
+        _context.Alerts.RemoveRange(_context.Alerts);
+        await _context.SaveChangesAsync();
+        var empty = await Controller("1", _adminId).GetAlertTypes(CancellationToken.None);
+        Assert.That(JsonSerializer.SerializeToElement(((OkObjectResult)empty).Value).GetArrayLength(), Is.Zero);
+    }
+
+    [Test]
+    public async Task TypeOptionsRejectMissingProfileAndCannotExpandAdminScope()
+    {
+        var missing = await Controller("1", null).GetAlertTypes(CancellationToken.None);
+        Assert.That(((StatusCodeResult)missing).StatusCode, Is.EqualTo(403));
+
+        var outside = await Controller("1", _adminId).GetAlertTypes(CancellationToken.None, _otherSchoolId);
+        Assert.That(JsonSerializer.SerializeToElement(((OkObjectResult)outside).Value).GetArrayLength(), Is.Zero);
+    }
+
+    [Test]
+    public async Task SuperadminTypeOptionsUsePersistedAlertsAndRespectTheSchoolParameter()
+    {
+        _context.AlertTypes.Add(new AlertType { Id = 3, Name = "Unused type" });
+        await _context.SaveChangesAsync();
+
+        var all = await Controller("5", null).GetAlertTypes(CancellationToken.None);
+        var types = JsonSerializer.SerializeToElement(((OkObjectResult)all).Value);
+        Assert.That(types.EnumerateArray().Select(t => t.GetProperty("Id").GetByte()),
+            Is.EqualTo(new byte[] { 1, 25 }));
+
+        var school = await Controller("5", null).GetAlertTypes(CancellationToken.None, _otherSchoolId);
+        var scoped = JsonSerializer.SerializeToElement(((OkObjectResult)school).Value);
+        Assert.That(scoped.EnumerateArray().Select(t => t.GetProperty("Id").GetByte()),
+            Is.EqualTo(new byte[] { 1 }));
     }
 
     [Test]

@@ -15,6 +15,25 @@ public class NotificationContext : DbContext
     public DbSet<AlertType> AlertTypes { get; set; }
     public DbSet<DeviceToken> DeviceTokens { get; set; }
 
+    public IQueryable<Alert> GetSchoolAlerts(Guid? adminProfileId, Guid? schoolId)
+    {
+        var query = Alerts.AsNoTracking();
+        if (!adminProfileId.HasValue && !schoolId.HasValue)
+            return query;
+
+        var schools = Set<SchoolAdminRefEntity>()
+            .Where(a => a.ProfileId == adminProfileId && a.Status == "Active")
+            .Select(a => a.SchoolId);
+        var profiles =
+            from profile in Set<ProfileRefEntity>()
+            join campus in Set<SchoolCampusRefEntity>()
+                on profile.CampuseId equals campus.Id
+            where (!adminProfileId.HasValue || schools.Contains(campus.SchoolId))
+                && (!schoolId.HasValue || campus.SchoolId == schoolId)
+            select profile.Id;
+        return query.Where(a => profiles.Contains(a.ProfileId));
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

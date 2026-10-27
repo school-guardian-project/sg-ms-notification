@@ -7,7 +7,6 @@ using ms_notification.Api.Domain.Model;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Domain.Port.Out;
 using ms_notification.Api.Infrastructure.Persistence.Context;
-using ms_notification.Api.Infrastructure.Persistence.Entity;
 
 namespace ms_notification.Api.Application.UseCase;
 
@@ -32,23 +31,7 @@ public class GetAlertsService : IGetAlertsUseCase
 
     public async Task<AlertsResponse> ExecuteAsync(AlertFilters filters, CancellationToken ct = default)
     {
-        var query = _context.Alerts
-            .AsNoTracking();
-
-        if (filters.AdminProfileId.HasValue || filters.SchoolId.HasValue)
-        {
-            var schools = _context.Set<SchoolAdminRefEntity>()
-                .Where(a => a.ProfileId == filters.AdminProfileId && a.Status == "Active")
-                .Select(a => a.SchoolId);
-            var profiles =
-                from profile in _context.Set<ProfileRefEntity>()
-                join campus in _context.Set<SchoolCampusRefEntity>()
-                    on profile.CampuseId equals campus.Id
-                where (!filters.AdminProfileId.HasValue || schools.Contains(campus.SchoolId))
-                    && (!filters.SchoolId.HasValue || campus.SchoolId == filters.SchoolId)
-                select profile.Id;
-            query = query.Where(a => profiles.Contains(a.ProfileId));
-        }
+        var query = _context.GetSchoolAlerts(filters.AdminProfileId, filters.SchoolId);
 
         // Filtrar por tipo de alerta
         if (filters.AlertTypeId.HasValue)
