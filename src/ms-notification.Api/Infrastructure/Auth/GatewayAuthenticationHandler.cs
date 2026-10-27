@@ -3,13 +3,13 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
-namespace ms_notification.Api.Infrastructure.Security;
+namespace ms_notification.Api.Infrastructure.Auth;
 
 /// <summary>
-/// Esquema de autenticacion que confia en las cabeceras X-User-* inyectadas por
+/// Esquema de autenticación que confía en las cabeceras X-User-* inyectadas por
 /// el API gateway (Kong) tras validar el access token RS256. El gateway elimina
 /// cualquier cabecera X-User-* entrante, por lo que el cliente no puede
-/// suplantar su identidad. La peticion sigue siendo anonima cuando no hay
+/// suplantar su identidad. La petición sigue siendo anónima cuando no hay
 /// cabeceras (flujos internos sin token).
 /// </summary>
 public sealed class GatewayAuthenticationHandler : AuthenticationHandler<GatewayAuthenticationOptions>

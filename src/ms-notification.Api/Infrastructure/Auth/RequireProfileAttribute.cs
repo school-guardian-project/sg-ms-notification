@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace ms_notification.Api.Infrastructure.Security;
+namespace ms_notification.Api.Infrastructure.Auth;
 
 /// <summary>
 /// Exige que la peticion incluya el claim "sub" (id del perfil autenticado que
