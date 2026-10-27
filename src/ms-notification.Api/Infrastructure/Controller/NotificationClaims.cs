@@ -1,9 +1,10 @@
 using System.Security.Claims;
+using ms_notification.Api.Infrastructure.Auth;
 
 namespace ms_notification.Api.Infrastructure.Controller;
 
 /// <summary>
-/// Lectura del claim "sub" que el gateway (Kong) inyecta tras validar el token:
+/// Lectura del claim "sub" del access token validado por el servicio:
 /// el id del perfil autenticado, que los controladores pasan como entrada a su
 /// caso de uso. La autorizacion (rol y perfil) vive en los atributos de
 /// Infrastructure/Auth (RequireRole / RequireProfile).
@@ -11,5 +12,5 @@ namespace ms_notification.Api.Infrastructure.Controller;
 internal static class NotificationClaims
 {
     internal static Guid CurrentProfileId(ClaimsPrincipal user) =>
-        Guid.TryParse(user.FindFirstValue("sub"), out var id) ? id : Guid.Empty;
+        Guid.TryParse(user.FindFirstValue(SgClaimTypes.Subject), out var id) ? id : Guid.Empty;
 }

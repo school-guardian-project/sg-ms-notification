@@ -4,9 +4,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace ms_notification.Api.Infrastructure.Auth;
 
 /// <summary>
-/// Exige que la peticion incluya el permiso indicado (FR-2.1). El permiso viaja
-/// como cabecera X-User-Permissions que el gateway deriva del claim
-/// permissions[] del access token.
+/// Exige que el access token incluya el permiso indicado en su claim
+/// "permissions" (FR-2.1). Responde 401 sin token valido y 403 sin el permiso.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public sealed class RequirePermissionAttribute : Attribute, IAsyncAuthorizationFilter
@@ -27,7 +26,7 @@ public sealed class RequirePermissionAttribute : Attribute, IAsyncAuthorizationF
             return Task.CompletedTask;
         }
 
-        if (!user.HasClaim(GatewayAuthenticationHandler.PermissionClaimType, _permission))
+        if (!user.HasClaim(SgClaimTypes.Permissions, _permission))
         {
             context.Result = new ObjectResult(new { message = "Forbidden" })
             {

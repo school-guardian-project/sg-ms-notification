@@ -118,7 +118,8 @@ public class ProcessScanServiceTests
         var alert = _context.Alerts.Single();
         Assert.That(alert.ProfileId, Is.EqualTo(_studentId));
         Assert.That(alert.RouteExecutionId, Is.EqualTo(_tripId));
-        Assert.That(alert.AlertTypeId, Is.EqualTo((byte)1));
+        // 25 = Boarding en el catalogo Notification.AlertType (seed 007).
+        Assert.That(alert.AlertTypeId, Is.EqualTo((byte)25));
         Assert.That(alert.Description, Does.Contain("Libertad").And.Contain("Calle 12 #34-56"));
 
         Assert.That(_publisher.Published, Has.Count.EqualTo(1));
@@ -150,7 +151,8 @@ public class ProcessScanServiceTests
 
         var response = await Scan(BoardingType.OFF_BOARD);
 
-        var alert = _context.Alerts.Single(a => a.AlertTypeId == 2);
+        // 26 = Alighting en el catalogo Notification.AlertType (seed 007).
+        var alert = _context.Alerts.Single(a => a.AlertTypeId == 26);
         Assert.That(alert.Id, Is.EqualTo(response.AlertId));
         Assert.That(alert.Description, Does.Contain("bajó del bus"));
         Assert.That(_context.Boardings.Count(), Is.EqualTo(2));

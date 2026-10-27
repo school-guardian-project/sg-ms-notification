@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace ms_notification.Api.Infrastructure.Auth;
 
 /// <summary>
-/// Exige que la peticion incluya el claim "sub" (id del perfil autenticado que
-/// inyecta el gateway) con un GUID valido y no vacio; si no responde 401 sin
+/// Exige que el access token incluya el claim "sub" (id del perfil autenticado)
+/// con un GUID valido y no vacio; si no responde 401 sin
 /// cuerpo. Los endpoints que usan el perfil autenticado como entrada del caso
 /// de uso (credential, guardian, devices, scan, incident report) lo declaran
 /// aqui en lugar de comprobarlo a mano en el controlador.
@@ -19,7 +19,7 @@ public sealed class RequireProfileAttribute : Attribute, IAsyncAuthorizationFilt
 
     public Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        var profileId = context.HttpContext.User.FindFirstValue("sub");
+        var profileId = context.HttpContext.User.FindFirstValue(SgClaimTypes.Subject);
         if (!Guid.TryParse(profileId, out var id) || id == Guid.Empty)
         {
             context.Result = new UnauthorizedResult();

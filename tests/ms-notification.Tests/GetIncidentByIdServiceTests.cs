@@ -95,11 +95,11 @@ public class GetIncidentByIdServiceTests
         Assert.That(dto, Is.Not.Null);
         Assert.That(dto!.Id, Is.EqualTo(alertId));
         Assert.That(dto.RouteExecutionId, Is.EqualTo(_tripId));
-        // IncidentProfile ignora RouteName/DriverName/BusPlate (los resuelve otra
-        // capa despues); el detalle debe devolverlos igual que la lista.
-        Assert.That(dto.RouteName, Is.Empty);
-        Assert.That(dto.DriverName, Is.Empty);
-        Assert.That(dto.BusPlate, Is.Empty);
+        // El detalle resuelve la ruta igual que la lista; conductor y bus aun
+        // no se resuelven y salen con el mismo texto que en la lista.
+        Assert.That(dto.RouteName, Is.EqualTo("Ruta Mañana"));
+        Assert.That(dto.DriverName, Is.EqualTo("Por resolver"));
+        Assert.That(dto.BusPlate, Is.EqualTo("Por resolver"));
         Assert.That(dto.IncidentType, Is.EqualTo(IncidentType.Accident));
         Assert.That(dto.Severity, Is.EqualTo(IncidentSeverity.Critical));
         Assert.That(dto.Status, Is.EqualTo(IncidentStatus.Open));

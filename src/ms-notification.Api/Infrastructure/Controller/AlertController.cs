@@ -51,7 +51,7 @@ public class AlertController : ControllerBase
             return BadRequest(new { message = "page debe ser >= 0 y size debe estar entre 1 y 100." });
         }
 
-        var isAdmin = User.FindFirstValue("roleId") == RequireRoleAttribute.AdminRoleId;
+        var isAdmin = User.FindFirstValue(SgClaimTypes.RoleId) == RequireRoleAttribute.AdminRoleId;
         var profileId = NotificationClaims.CurrentProfileId(User);
         if (isAdmin && profileId == Guid.Empty)
         {
