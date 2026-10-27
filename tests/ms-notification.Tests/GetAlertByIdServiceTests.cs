@@ -1,3 +1,4 @@
+using ms_notification.Api.Application.Mapper;
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.Dto;
 using ms_notification.Api.Application.Dto.RouteDirectory;
@@ -38,7 +39,7 @@ public class GetAlertByIdServiceTests
             RouteByExecutionId = new RouteInfo(_tripId, "Ruta Mañana")
         };
 
-        _service = new GetAlertByIdService(_context, _students, _routes);
+        _service = new GetAlertByIdService(_context, _students, _routes, new AlertMapper());
     }
 
     [TearDown]

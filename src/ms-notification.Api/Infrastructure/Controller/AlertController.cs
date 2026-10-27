@@ -105,7 +105,7 @@ public class AlertController : ControllerBase
 
     [HttpGet("alerts/{alertId:guid}")]
     [RequireRole(RequireRoleAttribute.AdminRoleId, RequireRoleAttribute.SuperAdminRoleId)]
-    public async Task<ActionResult<AlertDetailResponse>> GetAlertById(Guid alertId, CancellationToken ct)
+    public async Task<ActionResult<AlertListResponse>> GetAlertById(Guid alertId, CancellationToken ct)
     {
         var alert = await _getAlertByIdService.ExecuteAsync(alertId, ct);
         if (alert is null)

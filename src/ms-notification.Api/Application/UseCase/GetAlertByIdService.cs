@@ -31,7 +31,7 @@ public class GetAlertByIdService : IGetAlertByIdUseCase
         _alertMapper = alertMapper;
     }
 
-    public async Task<AlertDetailResponse?> ExecuteAsync(Guid alertId, CancellationToken ct = default)
+    public async Task<AlertListResponse?> ExecuteAsync(Guid alertId, CancellationToken ct = default)
     {
         var alert = await _context.Alerts
             .AsNoTracking()
@@ -42,6 +42,14 @@ public class GetAlertByIdService : IGetAlertByIdUseCase
             return null;
         }
 
-        return _alertMapper.ToDetailResponse(alert);
+        var student = await _studentDirectory.GetStudentByProfileIdAsync(alert.ProfileId, ct);
+        var route = await _routeDirectory.GetRouteByExecutionIdAsync(alert.RouteExecutionId, ct);
+        var typeName = await _context.AlertTypes
+            .AsNoTracking()
+            .Where(t => t.Id == alert.AlertTypeId)
+            .Select(t => t.Name)
+            .FirstOrDefaultAsync(ct);
+
+        return _alertMapper.ToListResponse(alert, student, route, typeName);
     }
 }

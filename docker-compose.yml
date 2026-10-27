@@ -9,6 +9,9 @@ services:
       - "8081:8080"
     env_file:
       - .env
+    environment:
+      Grpc__Route__Address: "${Grpc__Route__Address:-http://ms-route:5001}"
+      Grpc__Family__Address: "${Grpc__Family__Address:-http://ms-user-management:5001}"
     networks:
       - sg-services-network
 

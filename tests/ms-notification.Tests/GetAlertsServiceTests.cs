@@ -217,7 +217,7 @@ public class GetAlertsServiceTests
 
     private sealed class Details : IGetAlertByIdUseCase
     {
-        public Task<AlertDetailResponse?> ExecuteAsync(Guid alertId, CancellationToken ct = default) =>
-            Task.FromResult<AlertDetailResponse?>(null);
+        public Task<AlertListResponse?> ExecuteAsync(Guid alertId, CancellationToken ct = default) =>
+            Task.FromResult<AlertListResponse?>(null);
     }
 }
