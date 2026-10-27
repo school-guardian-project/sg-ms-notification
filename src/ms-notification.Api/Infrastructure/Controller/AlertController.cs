@@ -4,6 +4,9 @@ using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Auth;
+using ms_notification.Api.Infrastructure.Persistence.Context;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ms_notification.Api.Infrastructure.Controller;
 
@@ -14,15 +17,18 @@ public class AlertController : ControllerBase
     private readonly IGetAlertsUseCase _getAlertsService;
     private readonly IAcknowledgeAlertUseCase _acknowledgeAlertService;
     private readonly IGetAlertByIdUseCase _getAlertByIdService;
+    private readonly NotificationContext _context;
 
     public AlertController(
         IGetAlertsUseCase getAlertsService,
         IAcknowledgeAlertUseCase acknowledgeAlertService,
-        IGetAlertByIdUseCase getAlertByIdService)
+        IGetAlertByIdUseCase getAlertByIdService,
+        NotificationContext context)
     {
         _getAlertsService = getAlertsService;
         _acknowledgeAlertService = acknowledgeAlertService;
         _getAlertByIdService = getAlertByIdService;
+        _context = context;
     }
 
     [HttpGet("alerts")]
@@ -36,8 +42,22 @@ public class AlertController : ControllerBase
         [FromQuery] DateTime? dateFrom = null,
         [FromQuery] DateTime? dateTo = null,
         [FromQuery] string? search = null,
+        [FromQuery] byte? alertTypeId = null,
+        [FromQuery] Guid? schoolId = null,
         CancellationToken ct = default)
     {
+        if (page < 0 || size < 1 || size > 100)
+        {
+            return BadRequest(new { message = "page debe ser >= 0 y size debe estar entre 1 y 100." });
+        }
+
+        var isAdmin = User.FindFirstValue("roleId") == RequireRoleAttribute.AdminRoleId;
+        var profileId = NotificationClaims.CurrentProfileId(User);
+        if (isAdmin && profileId == Guid.Empty)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden);
+        }
+
         var filters = new AlertFilters
         {
             Page = page,
@@ -47,11 +67,25 @@ public class AlertController : ControllerBase
             Acknowledged = acknowledged,
             DateFrom = dateFrom,
             DateTo = dateTo,
-            Search = search
+            Search = search,
+            AlertTypeId = alertTypeId,
+            SchoolId = schoolId,
+            AdminProfileId = isAdmin ? profileId : null
         };
 
         var result = await _getAlertsService.ExecuteAsync(filters, ct);
         return Ok(result);
+    }
+
+    [HttpGet("alert-types")]
+    [RequireRole(RequireRoleAttribute.AdminRoleId, RequireRoleAttribute.SuperAdminRoleId)]
+    public async Task<IActionResult> GetAlertTypes(CancellationToken ct)
+    {
+        var types = await _context.AlertTypes.AsNoTracking()
+            .OrderBy(t => t.Name)
+            .Select(t => new { t.Id, t.Name })
+            .ToListAsync(ct);
+        return Ok(types);
     }
 
     [HttpPost("alerts/{alertId:guid}/acknowledge")]
