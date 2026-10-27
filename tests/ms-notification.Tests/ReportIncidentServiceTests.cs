@@ -1,3 +1,5 @@
+using ms_notification.Api.Application.Mapper;
+using ms_notification.Api.Application.Dto.Request;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using ms_notification.Api.Application.Dto;
@@ -65,7 +67,8 @@ public class ReportIncidentServiceTests
 
         _service = new ReportIncidentService(
             _context, _publisher, _routes, _family, _school,
-            NullLogger<ReportIncidentService>.Instance);
+            NullLogger<ReportIncidentService>.Instance,
+            new IncidentMapper());
     }
 
     [TearDown]
@@ -87,7 +90,7 @@ public class ReportIncidentServiceTests
         _context.SaveChanges();
     }
 
-    private static ReportIncidentRequestDto Request(string? description = "Choque leve en la Av. 68") =>
+    private static ReportIncidentRequest Request(string? description = "Choque leve en la Av. 68") =>
         new() { AlertTypeId = AccidentTypeId, Description = description };
 
     [Test]
@@ -210,7 +213,7 @@ public class ReportIncidentServiceTests
     [Test]
     public void Report_WithATypeOutsideTheCatalog_IsRejected()
     {
-        var request = new ReportIncidentRequestDto { AlertTypeId = 200, Description = "x" };
+        var request = new ReportIncidentRequest { AlertTypeId = 200, Description = "x" };
 
         var ex = Assert.ThrowsAsync<InvalidOperationException>(
             () => _service.ExecuteAsync(_driverId, request));

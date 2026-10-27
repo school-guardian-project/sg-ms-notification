@@ -17,6 +17,8 @@ namespace ms_notification.Api.Application.Dto.Response;
 /// <param name="Acknowledged">Whether the alert has been acknowledged.</param>
 /// <param name="AcknowledgedAt">Acknowledgment timestamp.</param>
 /// <param name="AcknowledgedBy">Who acknowledged the alert.</param>
+/// <param name="AlertTypeId">Catalog id (Notification.AlertType).</param>
+/// <param name="AlertTypeName">Catalog name of the alert type.</param>
 public sealed record AlertListResponse(
     Guid Id,
     Guid RouteExecutionId,
@@ -28,4 +30,6 @@ public sealed record AlertListResponse(
     DateTime Timestamp,
     bool Acknowledged,
     DateTime? AcknowledgedAt,
-    string? AcknowledgedBy);
+    string? AcknowledgedBy,
+    byte AlertTypeId,
+    string AlertTypeName);

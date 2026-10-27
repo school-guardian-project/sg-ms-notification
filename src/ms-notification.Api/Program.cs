@@ -1,3 +1,4 @@
+using ms_notification.Api.Infrastructure.Auth;
 using ms_notification.Api.Infrastructure.DependencyInjection;
 using ms_notification.Api.Infrastructure.Grpc;
 using System.Threading.RateLimiting;

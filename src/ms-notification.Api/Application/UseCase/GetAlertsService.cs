@@ -58,7 +58,9 @@ public class GetAlertsService : IGetAlertsUseCase
         }
         else if (filters.AlertType.HasValue)
         {
-            // Fallback: convertir BoardingType a byte
+            // Fallback: alertType=ON_BOARD/OFF_BOARD son los ids de escaneo 25/26
+            // (007-insert-boarding-alert-types.sql); 1 y 2 del catalogo son
+            // 'Bus Delay' y 'Route Deviation'.
             var scanAlertTypeId = filters.AlertType.Value == BoardingType.ON_BOARD
                 ? (byte)25
                 : (byte)26;
@@ -115,7 +117,8 @@ public class GetAlertsService : IGetAlertsUseCase
             var student = await _studentDirectory.GetStudentByProfileIdAsync(alert.ProfileId, ct);
             var route = await _routeDirectory.GetRouteByExecutionIdAsync(alert.RouteExecutionId, ct);
 
-            alertDtos.Add(_alertMapper.ToListResponse(alert, student, route));
+            alertDtos.Add(_alertMapper.ToListResponse(
+                alert, student, route, types.GetValueOrDefault(alert.AlertTypeId)));
         }
 
         return new AlertsResponse(
