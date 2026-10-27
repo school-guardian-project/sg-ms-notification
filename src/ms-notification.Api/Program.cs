@@ -1,4 +1,4 @@
-using ms_notification.Api.Infrastructure.Security;
+using ms_notification.Api.Infrastructure.Auth;
 using ms_notification.Api.Infrastructure.DependencyInjection;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
