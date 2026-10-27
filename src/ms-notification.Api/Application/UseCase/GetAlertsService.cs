@@ -7,6 +7,7 @@ using ms_notification.Api.Domain.Model;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Domain.Port.Out;
 using ms_notification.Api.Infrastructure.Persistence.Context;
+using ms_notification.Api.Infrastructure.Persistence.Entity;
 
 namespace ms_notification.Api.Application.UseCase;
 
@@ -34,8 +35,23 @@ public class GetAlertsService : IGetAlertsUseCase
         var query = _context.Alerts
             .AsNoTracking();
 
+        if (filters.AdminProfileId.HasValue || filters.SchoolId.HasValue)
+        {
+            var schools = _context.Set<SchoolAdminRefEntity>()
+                .Where(a => a.ProfileId == filters.AdminProfileId && a.Status == "Active")
+                .Select(a => a.SchoolId);
+            var profiles =
+                from profile in _context.Set<ProfileRefEntity>()
+                join campus in _context.Set<SchoolCampusRefEntity>()
+                    on profile.CampuseId equals campus.Id
+                where (!filters.AdminProfileId.HasValue || schools.Contains(campus.SchoolId))
+                    && (!filters.SchoolId.HasValue || campus.SchoolId == filters.SchoolId)
+                select profile.Id;
+            query = query.Where(a => profiles.Contains(a.ProfileId));
+        }
+
         // Filtrar por tipo de alerta
-        if (filters.AlertType.HasValue)
+        if (filters.AlertTypeId.HasValue)
         {
             // alertType=ON_BOARD/OFF_BOARD son los ids de escaneo 25/26
             // (007-insert-boarding-alert-types.sql); 1 y 2 del catalogo son
@@ -66,15 +82,16 @@ public class GetAlertsService : IGetAlertsUseCase
         // Búsqueda por texto (en descripción)
         if (!string.IsNullOrWhiteSpace(filters.Search))
         {
-            var search = filters.Search.ToLower();
+            var search = filters.Search.Trim().ToLower();
             query = query.Where(a => a.Description != null && a.Description.ToLower().Contains(search));
         }
 
         // Ordenación
         var (sortField, sortDirection) = ParseSort(filters.Sort);
-        query = sortDirection == "desc"
+        var orderedQuery = sortDirection == "desc"
             ? query.OrderByDescending(e => EF.Property<DateTime>(e, sortField))
             : query.OrderBy(e => EF.Property<DateTime>(e, sortField));
+        query = orderedQuery.ThenBy(a => a.Id);
 
         var totalElements = await query.CountAsync(ct);
         var totalPages = (int)Math.Ceiling(totalElements / (double)filters.Size);
@@ -83,6 +100,10 @@ public class GetAlertsService : IGetAlertsUseCase
             .Skip(filters.Page * filters.Size)
             .Take(filters.Size)
             .ToListAsync(ct);
+        var typeIds = alerts.Select(a => a.AlertTypeId).Distinct().ToArray();
+        var types = await _context.AlertTypes.AsNoTracking()
+            .Where(t => typeIds.Contains(t.Id))
+            .ToDictionaryAsync(t => t.Id, t => t.Name, ct);
 
         // Resolver nombres de estudiantes y rutas - usando mapper pattern
         var alertDtos = new List<AlertListResponse>();
@@ -105,6 +126,7 @@ public class GetAlertsService : IGetAlertsUseCase
     private static (string field, string direction) ParseSort(string sort)
     {
         var parts = sort.Split(',');
-        return (parts[0], parts.Length > 1 ? parts[1] : "desc");
+        return (nameof(Alert.DateTime), parts.Length > 1 && parts[1].Equals("asc", StringComparison.OrdinalIgnoreCase)
+            ? "asc" : "desc");
     }
 }
