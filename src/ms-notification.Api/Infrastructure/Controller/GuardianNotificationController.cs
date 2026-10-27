@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Domain.Port.In;
-using ms_notification.Api.Infrastructure.Security;
+using ms_notification.Api.Infrastructure.Auth;
 
 namespace ms_notification.Api.Infrastructure.Controller;
 

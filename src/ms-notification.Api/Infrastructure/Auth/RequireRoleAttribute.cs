@@ -2,7 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace ms_notification.Api.Infrastructure.Security;
+namespace ms_notification.Api.Infrastructure.Auth;
 
 /// <summary>
 /// Exige que el claim "roleId" que el gateway (Kong) inyecta tras validar el

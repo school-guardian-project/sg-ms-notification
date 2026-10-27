@@ -29,6 +29,8 @@
     -->
     <Protobuf Include="Protos\route.proto" GrpcServices="Client" />
     <Protobuf Include="Protos\family.proto" GrpcServices="Client" />
+    <!-- boarding.proto es servidor en ms-notification (expone consultas de embarque). -->
+    <Protobuf Include="Protos\boarding.proto" GrpcServices="Server" />
   </ItemGroup>
 
   <ItemGroup>
