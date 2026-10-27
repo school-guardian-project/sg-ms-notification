@@ -1,4 +1,4 @@
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Domain.Model;
 
 namespace ms_notification.Api.Domain.Port.Out;
 

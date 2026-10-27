@@ -1,4 +1,4 @@
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Response;
 
 namespace ms_notification.Api.Domain.Port.In;
 
@@ -8,5 +8,5 @@ namespace ms_notification.Api.Domain.Port.In;
 /// </summary>
 public interface IGetGuardianNotificationsUseCase
 {
-    Task<List<GuardianNotificationDto>> ExecuteAsync(Guid profileId, CancellationToken ct = default);
+    Task<List<GuardianNotificationResponse>> ExecuteAsync(Guid profileId, CancellationToken ct = default);
 }

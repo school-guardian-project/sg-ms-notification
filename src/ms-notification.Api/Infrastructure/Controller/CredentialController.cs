@@ -1,5 +1,6 @@
 using Grpc.Core;
 using Microsoft.AspNetCore.Mvc;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Auth;
 
@@ -18,11 +19,12 @@ public class CredentialController : ControllerBase
 
     [HttpGet("credential")]
     [RequireProfile]
-    public async Task<IActionResult> GetCredential(CancellationToken ct)
+    public async Task<ActionResult<CredentialResponse>> GetCredential(CancellationToken ct)
     {
         try
         {
-            return Ok(await _credentialService.ExecuteAsync(NotificationClaims.CurrentProfileId(User), ct));
+            var response = await _credentialService.ExecuteAsync(NotificationClaims.CurrentProfileId(User), ct);
+            return Ok(response);
         }
         catch (InvalidOperationException ex)
         {

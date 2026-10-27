@@ -1,8 +1,8 @@
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Application.Mapper;
-using ms_notification.Api.Domain.Model;
+using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Domain.Port.Out;
 using ms_notification.Api.Infrastructure.Persistence.Context;
@@ -12,20 +12,17 @@ namespace ms_notification.Api.Application.UseCase;
 public class GetIncidentsService : IGetIncidentsUseCase
 {
     private readonly NotificationContext _context;
-    private readonly IStudentDirectory _studentDirectory;
     private readonly IRouteDirectory _routeDirectory;
-    private readonly IMapper _mapper;
+    private readonly IIncidentMapper _incidentMapper;
 
     public GetIncidentsService(
         NotificationContext context,
-        IStudentDirectory studentDirectory,
         IRouteDirectory routeDirectory,
-        IMapper mapper)
+        IIncidentMapper incidentMapper)
     {
         _context = context;
-        _studentDirectory = studentDirectory;
         _routeDirectory = routeDirectory;
-        _mapper = mapper;
+        _incidentMapper = incidentMapper;
     }
 
     public async Task<IncidentsResponse> ExecuteAsync(IncidentFilters filters, CancellationToken ct = default)
@@ -87,28 +84,28 @@ public class GetIncidentsService : IGetIncidentsUseCase
             .Take(filters.Size)
             .ToListAsync(ct);
 
-        // Mapear con AutoMapper
-        var incidentDtos = new List<IncidentListDto>();
+        // Mapear usando el nuevo mapper
+        var incidentDtos = new List<IncidentListResponse>();
         foreach (var alert in alerts)
         {
             var route = await _routeDirectory.GetRouteByExecutionIdAsync(alert.RouteExecutionId, ct);
-            incidentDtos.Add(_mapper.Map<IncidentListDto>(alert, opts =>
-            {
-                opts.Items["RouteName"] = route?.RouteName ?? "Sin ruta";
-                opts.Items["DriverName"] = "Por resolver"; // TODO: resolver conductor
-                opts.Items["BusPlate"] = "Por resolver"; // TODO: resolver bus
-                opts.Items["ReportedBy"] = "Por resolver"; // TODO: resolver quién reportó
-            }));
+            incidentDtos.Add(_incidentMapper.ToListResponse(
+                alert,
+                route?.RouteName ?? "Sin ruta",
+                "Por resolver", // TODO: resolver conductor
+                "Por resolver", // TODO: resolver bus
+                "Por resolver", // TODO: resolver quién reportó
+                IncidentStatus.Open,
+                null,
+                null));
         }
 
-        return new IncidentsResponse
-        {
-            Content = incidentDtos.ToArray(),
-            TotalElements = totalElements,
-            TotalPages = totalPages,
-            Size = filters.Size,
-            Number = filters.Page
-        };
+        return new IncidentsResponse(
+            incidentDtos.ToArray(),
+            totalElements,
+            totalPages,
+            filters.Size,
+            filters.Page);
     }
 
     private static (string field, string direction) ParseSort(string sort)

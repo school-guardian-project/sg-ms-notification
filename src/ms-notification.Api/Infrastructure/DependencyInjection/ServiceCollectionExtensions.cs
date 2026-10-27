@@ -1,4 +1,3 @@
-using AutoMapper;
 using Confluent.Kafka;
 using Microsoft.EntityFrameworkCore;
 using ms_notification.Api.Application.Configuration;
@@ -57,6 +56,13 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<IEventPublisher, KafkaEventPublisher>();
 
+        // Mappers (stateless, singleton)
+        services.AddSingleton<IAlertMapper, AlertMapper>();
+        services.AddSingleton<IIncidentMapper, IncidentMapper>();
+        services.AddSingleton<IGuardianNotificationMapper, GuardianNotificationMapper>();
+        services.AddSingleton<IScanResponseMapper, ScanResponseMapper>();
+        services.AddSingleton<ICredentialResponseMapper, CredentialResponseMapper>();
+
         // Casos de uso (puertos de entrada).
         services.AddScoped<IProcessScanUseCase, ProcessScanService>();
         services.AddScoped<IGetGuardianNotificationsUseCase, GetGuardianNotificationsService>();
@@ -73,12 +79,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISchoolDirectory, SchoolDirectory>();
 
         services.AddSingleton<QrTokenSigner>();
-
-        // AutoMapper
-        services.AddAutoMapper(cfg =>
-        {
-            cfg.AddProfile<IncidentProfile>();
-        });
 
         // Casos de uso adicionales para dashboard admin
         services.AddScoped<IGetAlertsUseCase, GetAlertsService>();

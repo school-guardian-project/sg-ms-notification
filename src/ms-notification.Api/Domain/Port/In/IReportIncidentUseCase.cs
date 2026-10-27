@@ -1,4 +1,5 @@
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
+using ms_notification.Api.Application.Dto.Response;
 
 namespace ms_notification.Api.Domain.Port.In;
 
@@ -9,6 +10,6 @@ namespace ms_notification.Api.Domain.Port.In;
 /// </summary>
 public interface IReportIncidentUseCase
 {
-    Task<IncidentResponseDto> ExecuteAsync(
-        Guid driverProfileId, ReportIncidentRequestDto request, CancellationToken ct = default);
+    Task<IncidentResponse> ExecuteAsync(
+        Guid driverProfileId, ReportIncidentRequest request, CancellationToken ct = default);
 }

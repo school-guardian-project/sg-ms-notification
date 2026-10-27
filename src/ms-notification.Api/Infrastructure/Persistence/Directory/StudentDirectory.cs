@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Domain.Model;
 using ms_notification.Api.Domain.Port.Out;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 using ms_notification.Api.Infrastructure.Persistence.Entity;
@@ -48,7 +48,8 @@ public class StudentDirectory : IStudentDirectory
         return new StudentInfo(
             ProfileId: studentProfileId,
             FullName: $"{person.Name} {person.LastName}".Trim(),
+            IdentificationNumber: null,
             Email: person.Email,
-            Phone: person.Phone.ToString());
+            PhoneNumber: person.Phone.ToString());
     }
 }

@@ -1,4 +1,4 @@
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Response;
 
 namespace ms_notification.Api.Domain.Port.In;
 
@@ -8,5 +8,5 @@ namespace ms_notification.Api.Domain.Port.In;
 /// </summary>
 public interface IGetStudentCredentialUseCase
 {
-    Task<CredentialResponseDto> ExecuteAsync(Guid studentProfileId, CancellationToken ct = default);
+    Task<CredentialResponse> ExecuteAsync(Guid studentProfileId, CancellationToken ct = default);
 }
