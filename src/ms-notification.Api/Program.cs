@@ -62,8 +62,15 @@ app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
-app.UseAuthorization(); 
-app.MapControllers();
+app.UseAuthorization();
+
+// Sin este middleware las politicas de AddRateLimiter (techo global y
+// "writes" de scan / incidents / devices) no se aplicaban.
+app.UseRateLimiter();
+
+// Todo endpoint REST exige un access token valido. El gRPC interno
+// (BoardingGrpcService) no pasa por aqui.
+app.MapControllers().RequireAuthorization();
 app.MapGrpcService<BoardingGrpcService>();
 
 app.Run();
