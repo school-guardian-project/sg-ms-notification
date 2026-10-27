@@ -17,7 +17,10 @@ public class CredentialController : ControllerBase
         _credentialService = credentialService;
     }
 
+    // Solo un estudiante tiene ruta y parada asignadas: su QR es la credencial
+    // que el conductor escanea (FR-4.1).
     [HttpGet("credential")]
+    [RequireRole(RequireRoleAttribute.StudentRoleId)]
     [RequireProfile]
     public async Task<ActionResult<CredentialResponse>> GetCredential(CancellationToken ct)
     {

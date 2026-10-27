@@ -27,11 +27,9 @@ public static class ServiceCollectionExtensions
                 sql => sql.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null)),
             poolSize: 32);
 
-        // El gateway (Kong) valida el access token RS256 y reenvía la identidad en
-        // las cabeceras X-User-*. Aquí solo se confía en ellas para poblar
-        // HttpContext.User; sin cabeceras la petición es anónima.
-        services.AddGatewayAuthentication();
-        services.AddAuthorization();
+        // El servicio valida por su cuenta el access token RS256 de ms-iam (JWKS):
+        // la identidad sale del token, no de las cabeceras X-User-* del gateway.
+        services.AddJwtAuthentication(configuration);
 
         services.AddSingleton<IProducer<string, string>>(sp =>
         {
