@@ -28,8 +28,4 @@ public sealed record AlertListResponse(
     DateTime Timestamp,
     bool Acknowledged,
     DateTime? AcknowledgedAt,
-    string? AcknowledgedBy)
-{
-    public byte AlertTypeId { get; init; }
-    public string AlertTypeName { get; init; } = string.Empty;
-}
+    string? AcknowledgedBy);

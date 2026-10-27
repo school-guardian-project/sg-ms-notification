@@ -11,9 +11,6 @@ public sealed class AlertFilters
     public int Size { get; init; } = 10;
     public string Sort { get; init; } = "timestamp,desc";
     public BoardingType? AlertType { get; init; }
-    public byte? AlertTypeId { get; init; }
-    public Guid? SchoolId { get; init; }
-    public Guid? AdminProfileId { get; init; }
     public bool? Acknowledged { get; init; }
     public DateTime? DateFrom { get; init; }
     public DateTime? DateTo { get; init; }

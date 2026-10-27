@@ -53,10 +53,6 @@ public class GetAlertsService : IGetAlertsUseCase
         // Filtrar por tipo de alerta
         if (filters.AlertTypeId.HasValue)
         {
-            query = query.Where(a => a.AlertTypeId == filters.AlertTypeId.Value);
-        }
-        else if (filters.AlertType.HasValue)
-        {
             // alertType=ON_BOARD/OFF_BOARD son los ids de escaneo 25/26
             // (007-insert-boarding-alert-types.sql); 1 y 2 del catalogo son
             // 'Bus Delay' y 'Route Deviation'.
@@ -116,11 +112,7 @@ public class GetAlertsService : IGetAlertsUseCase
             var student = await _studentDirectory.GetStudentByProfileIdAsync(alert.ProfileId, ct);
             var route = await _routeDirectory.GetRouteByExecutionIdAsync(alert.RouteExecutionId, ct);
 
-            alertDtos.Add(_alertMapper.ToListResponse(alert, student, route) with
-            {
-                AlertTypeId = alert.AlertTypeId,
-                AlertTypeName = types.GetValueOrDefault(alert.AlertTypeId, string.Empty)
-            });
+            alertDtos.Add(_alertMapper.ToListResponse(alert, student, route));
         }
 
         return new AlertsResponse(
