@@ -3,7 +3,8 @@ using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ms_notification.Api.Application.Configuration;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Application.Security;
 using ms_notification.Api.Application.Service;
@@ -17,6 +18,12 @@ namespace ms_notification.Api.Application.UseCase;
 
 public class ProcessScanService : IProcessScanUseCase
 {
+    // Notification.AlertType sembrado en 007-insert-boarding-alert-types.sql:
+    // 25 = Boarding, 26 = Alighting. Los ids 1 y 2 del catalogo son
+    // 'Bus Delay' y 'Route Deviation', no escaneos.
+    private const byte BoardingAlertTypeId = 25;
+    private const byte AlightingAlertTypeId = 26;
+
     private readonly NotificationContext _context;
     private readonly IEventPublisher _eventPublisher;
     private readonly IRouteDirectory _routeDirectory;
@@ -27,6 +34,7 @@ public class ProcessScanService : IProcessScanUseCase
     private readonly TimeZoneInfo _timeZone;
     private readonly TimeProvider _clock;
     private readonly ILogger<ProcessScanService> _logger;
+    private readonly IScanResponseMapper _scanResponseMapper;
 
     public ProcessScanService(
         NotificationContext context,
@@ -37,7 +45,8 @@ public class ProcessScanService : IProcessScanUseCase
         QrTokenSigner signer,
         IOptions<ScanWindowOptions> window,
         TimeProvider clock,
-        ILogger<ProcessScanService> logger)
+        ILogger<ProcessScanService> logger,
+        IScanResponseMapper scanResponseMapper)
     {
         _context = context;
         _eventPublisher = eventPublisher;
@@ -49,12 +58,13 @@ public class ProcessScanService : IProcessScanUseCase
         _timeZone = ScanScheduleRule.ResolveTimeZone(_window.TimeZoneId, logger);
         _clock = clock;
         _logger = logger;
+        _scanResponseMapper = scanResponseMapper;
     }
 
-    public async Task<ScanResponseDto> ExecuteAsync(
-        Guid driverProfileId, ScanRequestDto request, CancellationToken ct = default)
+    public async Task<ProcessScanResponse> ExecuteAsync(
+        Guid driverProfileId, ProcessScanRequest request, CancellationToken ct = default)
     {
-        if (request.BoardingType is not (BoardingType.ON_BOARD or BoardingType.OFF_BOARD))
+        if (request.BoardingType is not (null or BoardingType.ON_BOARD or BoardingType.OFF_BOARD))
         {
             throw new InvalidOperationException("Invalid boarding type");
         }
@@ -88,6 +98,12 @@ public class ProcessScanService : IProcessScanUseCase
 
         var state = await CurrentStateAsync(studentProfileId, trip.Id, ct);
 
+        // El tipo lo decide el backend cuando el cliente no lo manda: manda el
+        // estado vigente del viaje (nunca abordo -> sube, a bordo -> baja,
+        // ya descendio -> reingreso). Si el cliente manda tipo, se respeta.
+        var boardingType = request.BoardingType
+            ?? (state == BoardingState.OnBoard ? BoardingType.OFF_BOARD : BoardingType.ON_BOARD);
+
         // Un escaneo repetido en el mismo estado no se vuelve a registrar ni a
         // notificar: se responde con lo ya existente (idempotencia por estado,
         // reemplaza la ventana fija de 30 segundos, que confundia un reingreso
@@ -100,19 +116,19 @@ public class ProcessScanService : IProcessScanUseCase
         //   A bordo       + OFF_BOARD -> registra
         //   Ya descendio  + ON_BOARD  -> registra (reingreso legitimo)
         //   Ya descendio  + OFF_BOARD -> idempotente
-        if (state == BoardingState.OnBoard && request.BoardingType == BoardingType.ON_BOARD)
+        if (state == BoardingState.OnBoard && boardingType == BoardingType.ON_BOARD)
         {
             return await ExistingResponseAsync(
                 studentProfileId, trip.Id, BoardingType.ON_BOARD, ct);
         }
 
-        if (state == BoardingState.OffBoard && request.BoardingType == BoardingType.OFF_BOARD)
+        if (state == BoardingState.OffBoard && boardingType == BoardingType.OFF_BOARD)
         {
             return await ExistingResponseAsync(
                 studentProfileId, trip.Id, BoardingType.OFF_BOARD, ct);
         }
 
-        if (state == BoardingState.None && request.BoardingType == BoardingType.OFF_BOARD)
+        if (state == BoardingState.None && boardingType == BoardingType.OFF_BOARD)
         {
             // No se desciende de un bus en el que nunca se abordo.
             throw new InvalidOperationException("No active boarding for the student");
@@ -121,7 +137,7 @@ public class ProcessScanService : IProcessScanUseCase
 
         var studentName = await _studentDirectory.GetStudentNameAsync(studentProfileId, ct);
         var description = AlertDescriptionBuilder.Build(
-            request.BoardingType, studentName, route.RouteName, stop.StopName, stop.Address);
+            boardingType, studentName, route.RouteName, stop.StopName, stop.Address);
         var now = _clock.GetUtcNow().UtcDateTime;
 
         var boarding = new Boarding
@@ -131,7 +147,7 @@ public class ProcessScanService : IProcessScanUseCase
             ProfileId = studentProfileId,
             RouteStopId = stop.RouteStopId,
             DateTime = now,
-            BoardingType = request.BoardingType
+            BoardingType = boardingType
         };
         _context.Boardings.Add(boarding);
 
@@ -139,7 +155,9 @@ public class ProcessScanService : IProcessScanUseCase
         {
             Id = Guid.NewGuid(),
             RouteExecutionId = trip.Id,
-            AlertTypeId = request.BoardingType == BoardingType.ON_BOARD ? (byte)1 : (byte)2,
+            AlertTypeId = boardingType == BoardingType.ON_BOARD
+                ? BoardingAlertTypeId
+                : AlightingAlertTypeId,
             ProfileId = studentProfileId,
             DateTime = now,
             Description = description
@@ -149,16 +167,11 @@ public class ProcessScanService : IProcessScanUseCase
         await _context.SaveChangesAsync(ct);
 
         var eventData = StudentScannedEventMapper.ToEvent(
-            boarding.Id, alert.Id, studentProfileId, trip.Id, request.BoardingType, stop);
+            boarding.Id, alert.Id, studentProfileId, trip.Id, boardingType, stop);
 
         await _eventPublisher.PublishAsync("student.scanned", eventData);
 
-        return new ScanResponseDto
-        {
-            BoardingId = boarding.Id,
-            AlertId = alert.Id,
-            ParentsNotified = await CountParentsAsync(studentProfileId, ct)
-        };
+        return _scanResponseMapper.ToResponse(boarding, alert, await CountParentsAsync(studentProfileId, ct));
     }
 
     private async Task<BoardingState> CurrentStateAsync(
@@ -183,7 +196,7 @@ public class ProcessScanService : IProcessScanUseCase
             : BoardingState.OffBoard;
     }
 
-    private async Task<ScanResponseDto> ExistingResponseAsync(
+    private async Task<ProcessScanResponse> ExistingResponseAsync(
         Guid studentProfileId, Guid tripId, BoardingType type, CancellationToken ct)
     {
         var boarding = await _context.Boardings
@@ -195,7 +208,9 @@ public class ProcessScanService : IProcessScanUseCase
             .ThenByDescending(b => b.BoardingType)
             .FirstAsync(ct);
 
-        var alertTypeId = type == BoardingType.ON_BOARD ? (byte)1 : (byte)2;
+        var alertTypeId = type == BoardingType.ON_BOARD
+            ? BoardingAlertTypeId
+            : AlightingAlertTypeId;
         var alert = await _context.Alerts
             .AsNoTracking()
             .Where(a => a.ProfileId == studentProfileId &&
@@ -204,13 +219,7 @@ public class ProcessScanService : IProcessScanUseCase
             .OrderByDescending(a => a.DateTime)
             .FirstOrDefaultAsync(ct);
 
-        return new ScanResponseDto
-        {
-            BoardingId = boarding.Id,
-            AlertId = alert?.Id ?? Guid.Empty,
-            ParentsNotified = await CountParentsAsync(studentProfileId, ct),
-            AlreadyProcessed = true
-        };
+        return _scanResponseMapper.ToResponse(boarding, alert!, await CountParentsAsync(studentProfileId, ct), alreadyProcessed: true);
     }
 
     private async Task<int> CountParentsAsync(Guid studentProfileId, CancellationToken ct)

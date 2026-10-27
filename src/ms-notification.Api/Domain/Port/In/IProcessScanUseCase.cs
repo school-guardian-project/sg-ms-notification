@@ -1,4 +1,5 @@
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
+using ms_notification.Api.Application.Dto.Response;
 
 namespace ms_notification.Api.Domain.Port.In;
 
@@ -8,6 +9,6 @@ namespace ms_notification.Api.Domain.Port.In;
 /// </summary>
 public interface IProcessScanUseCase
 {
-    Task<ScanResponseDto> ExecuteAsync(
-        Guid driverProfileId, ScanRequestDto request, CancellationToken ct = default);
+    Task<ProcessScanResponse> ExecuteAsync(
+        Guid driverProfileId, ProcessScanRequest request, CancellationToken ct = default);
 }

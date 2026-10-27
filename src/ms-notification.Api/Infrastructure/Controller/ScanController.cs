@@ -1,7 +1,8 @@
 using Grpc.Core;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Security;
 
@@ -22,11 +23,12 @@ public class ScanController : ControllerBase
     [HttpPost("scan")]
     [RequireRole(RequireRoleAttribute.DriverRoleId)]
     [RequireProfile]
-    public async Task<IActionResult> Scan([FromBody] ScanRequestDto request, CancellationToken ct)
+    public async Task<ActionResult<ProcessScanResponse>> Scan([FromBody] ProcessScanRequest request, CancellationToken ct)
     {
         try
         {
-            return Ok(await _processScanService.ExecuteAsync(NotificationClaims.CurrentProfileId(User), request, ct));
+            var response = await _processScanService.ExecuteAsync(NotificationClaims.CurrentProfileId(User), request, ct);
+            return Ok(response);
         }
         catch (InvalidOperationException ex)
         {

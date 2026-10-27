@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Response;
+using ms_notification.Api.Application.Mapper;
+using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Persistence.Context;
 
@@ -8,13 +10,17 @@ namespace ms_notification.Api.Application.UseCase;
 public class GetGuardianNotificationsService : IGetGuardianNotificationsUseCase
 {
     private readonly NotificationContext _context;
+    private readonly IGuardianNotificationMapper _notificationMapper;
 
-    public GetGuardianNotificationsService(NotificationContext context)
+    public GetGuardianNotificationsService(
+        NotificationContext context,
+        IGuardianNotificationMapper notificationMapper)
     {
         _context = context;
+        _notificationMapper = notificationMapper;
     }
 
-    public async Task<List<GuardianNotificationDto>> ExecuteAsync(Guid profileId, CancellationToken ct = default)
+    public async Task<List<GuardianNotificationResponse>> ExecuteAsync(Guid profileId, CancellationToken ct = default)
     {
         var rows = await (
             from ar in _context.AlertRecipients
@@ -25,7 +31,7 @@ public class GetGuardianNotificationsService : IGetGuardianNotificationsUseCase
 
         if (rows.Count == 0)
         {
-            return new List<GuardianNotificationDto>();
+            return new List<GuardianNotificationResponse>();
         }
 
         var executionIds = rows.Select(r => r.Alert.RouteExecutionId).Distinct().ToList();
@@ -44,20 +50,15 @@ public class GetGuardianNotificationsService : IGetGuardianNotificationsUseCase
                     .OrderBy(b => Math.Abs((b.DateTime - r.Alert.DateTime).Ticks))
                     .FirstOrDefault();
 
-                return new GuardianNotificationDto
-                {
-                    Id = r.Recipient.Id,
-                    AlertId = r.Alert.Id,
-                    DateTimeRead = r.Recipient.DateTimeRead,
-                    BoardingType = boarding?.BoardingType,
-                    Alert = new AlertDetailDto
-                    {
-                        Id = r.Alert.Id,
-                        Description = r.Alert.Description,
-                        DateTime = boarding?.DateTime ?? r.Alert.DateTime,
-                        AlertTypeId = r.Alert.AlertTypeId
-                    }
-                };
+                var alertDetail = new AlertDetailResponse(
+                    r.Alert.Id,
+                    r.Alert.Description,
+                    boarding?.DateTime ?? r.Alert.DateTime,
+                    r.Alert.AlertTypeId);
+
+                var boardingType = boarding?.BoardingType;
+
+                return _notificationMapper.ToResponse(r.Recipient, alertDetail, boardingType);
             })
             .OrderByDescending(n => n.Alert.DateTime)
             .ToList();

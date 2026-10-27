@@ -1,4 +1,4 @@
-using ms_notification.Api.Infrastructure.Auth;
+using ms_notification.Api.Infrastructure.Security;
 using ms_notification.Api.Infrastructure.DependencyInjection;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
@@ -42,10 +42,6 @@ builder.Services.AddRateLimiter(options =>
             QueueLimit = 0
         }));
 });
-
-// El gateway (Kong) valida el access token RS256 y reenvía la identidad en las
-// cabeceras X-User-*. Aquí solo se confía en ellas para poblar HttpContext.User.
-builder.Services.AddGatewayAuthentication();
 
 builder.Services.AddNotificationServices(builder.Configuration);
 builder.Services.AddHostedService<ms_notification.Api.Infrastructure.Messaging.Kafka.Consumer.StudentScannedConsumer>();

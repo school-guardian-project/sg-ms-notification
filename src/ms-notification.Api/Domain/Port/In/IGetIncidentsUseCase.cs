@@ -1,4 +1,5 @@
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Response;
+using ms_notification.Api.Application.Dto.Request;
 
 namespace ms_notification.Api.Domain.Port.In;
 

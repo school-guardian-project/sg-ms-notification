@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Domain.Enum;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Security;
@@ -26,7 +27,7 @@ public class AlertController : ControllerBase
 
     [HttpGet("alerts")]
     [RequireRole(RequireRoleAttribute.AdminRoleId, RequireRoleAttribute.SuperAdminRoleId)]
-    public async Task<IActionResult> GetAlerts(
+    public async Task<ActionResult<AlertsResponse>> GetAlerts(
         [FromQuery] int page = 0,
         [FromQuery] int size = 10,
         [FromQuery] string sort = "timestamp,desc",
@@ -70,7 +71,7 @@ public class AlertController : ControllerBase
 
     [HttpGet("alerts/{alertId:guid}")]
     [RequireRole(RequireRoleAttribute.AdminRoleId, RequireRoleAttribute.SuperAdminRoleId)]
-    public async Task<IActionResult> GetAlertById(Guid alertId, CancellationToken ct)
+    public async Task<ActionResult<AlertDetailResponse>> GetAlertById(Guid alertId, CancellationToken ct)
     {
         var alert = await _getAlertByIdService.ExecuteAsync(alertId, ct);
         if (alert is null)

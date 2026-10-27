@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Application.Mapper;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Domain.Port.Out;
@@ -17,18 +17,21 @@ public class GetAlertByIdService : IGetAlertByIdUseCase
     private readonly NotificationContext _context;
     private readonly IStudentDirectory _studentDirectory;
     private readonly IRouteDirectory _routeDirectory;
+    private readonly IAlertMapper _alertMapper;
 
     public GetAlertByIdService(
         NotificationContext context,
         IStudentDirectory studentDirectory,
-        IRouteDirectory routeDirectory)
+        IRouteDirectory routeDirectory,
+        IAlertMapper alertMapper)
     {
         _context = context;
         _studentDirectory = studentDirectory;
         _routeDirectory = routeDirectory;
+        _alertMapper = alertMapper;
     }
 
-    public async Task<AlertListDto?> ExecuteAsync(Guid alertId, CancellationToken ct = default)
+    public async Task<AlertDetailResponse?> ExecuteAsync(Guid alertId, CancellationToken ct = default)
     {
         var alert = await _context.Alerts
             .AsNoTracking()
@@ -39,9 +42,6 @@ public class GetAlertByIdService : IGetAlertByIdUseCase
             return null;
         }
 
-        var student = await _studentDirectory.GetStudentByProfileIdAsync(alert.ProfileId, ct);
-        var route = await _routeDirectory.GetRouteByExecutionIdAsync(alert.RouteExecutionId, ct);
-
-        return AlertListDtoMapper.ToDto(alert, student, route);
+        return _alertMapper.ToDetailResponse(alert);
     }
 }

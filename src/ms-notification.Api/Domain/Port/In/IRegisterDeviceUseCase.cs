@@ -1,4 +1,4 @@
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
 
 namespace ms_notification.Api.Domain.Port.In;
 
@@ -8,5 +8,5 @@ namespace ms_notification.Api.Domain.Port.In;
 /// </summary>
 public interface IRegisterDeviceUseCase
 {
-    Task ExecuteAsync(Guid profileId, RegisterDeviceRequestDto request, CancellationToken ct = default);
+    Task ExecuteAsync(Guid profileId, RegisterDeviceRequest request, CancellationToken ct = default);
 }

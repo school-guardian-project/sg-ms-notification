@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using ms_notification.Api.Application.Dto;
+using ms_notification.Api.Application.Dto.Request;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Security;
 
@@ -20,7 +20,7 @@ public class DeviceController : ControllerBase
     [EnableRateLimiting("writes")]
     [HttpPost("devices")]
     [RequireProfile]
-    public async Task<IActionResult> RegisterDevice([FromBody] RegisterDeviceRequestDto request, CancellationToken ct)
+    public async Task<IActionResult> RegisterDevice([FromBody] RegisterDeviceRequest request, CancellationToken ct)
     {
         await _registerDeviceService.ExecuteAsync(NotificationClaims.CurrentProfileId(User), request, ct);
         return Ok();

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using ms_notification.Api.Application.Dto.Response;
 using ms_notification.Api.Domain.Port.In;
 using ms_notification.Api.Infrastructure.Security;
 
@@ -17,8 +18,9 @@ public class GuardianNotificationController : ControllerBase
 
     [HttpGet("guardian")]
     [RequireProfile]
-    public async Task<IActionResult> GetGuardianNotifications(CancellationToken ct)
+    public async Task<ActionResult<List<GuardianNotificationResponse>>> GetGuardianNotifications(CancellationToken ct)
     {
-        return Ok(await _guardianNotificationsService.ExecuteAsync(NotificationClaims.CurrentProfileId(User), ct));
+        var response = await _guardianNotificationsService.ExecuteAsync(NotificationClaims.CurrentProfileId(User), ct);
+        return Ok(response);
     }
 }
