@@ -10,13 +10,12 @@ namespace ms_notification.Api.Application.Mapper;
 /// </summary>
 public interface IAlertMapper
 {
-    AlertListResponse ToListResponse(Alert alert, StudentInfo? student, RouteInfo? route);
-    AlertDetailResponse ToDetailResponse(Alert alert);
+    AlertListResponse ToListResponse(Alert alert, StudentInfo? student, RouteInfo? route, string? alertTypeName);
 }
 
 public sealed class AlertMapper : IAlertMapper
 {
-    public AlertListResponse ToListResponse(Alert alert, StudentInfo? student, RouteInfo? route)
+    public AlertListResponse ToListResponse(Alert alert, StudentInfo? student, RouteInfo? route, string? alertTypeName)
     {
         return new AlertListResponse(
             alert.Id,
@@ -29,16 +28,9 @@ public sealed class AlertMapper : IAlertMapper
             alert.DateTime,
             alert.AcknowledgedAt.HasValue,
             alert.AcknowledgedAt,
-            null);
-    }
-
-    public AlertDetailResponse ToDetailResponse(Alert alert)
-    {
-        return new AlertDetailResponse(
-            alert.Id,
-            alert.Description,
-            alert.DateTime,
-            alert.AlertTypeId);
+            null,
+            alert.AlertTypeId,
+            alertTypeName ?? string.Empty);
     }
 
     // 25/26 son los ids de escaneo del catalogo (007-insert-boarding-alert-types.sql).

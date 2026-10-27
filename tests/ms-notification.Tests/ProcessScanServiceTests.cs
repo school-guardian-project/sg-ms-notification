@@ -1,3 +1,6 @@
+using ms_notification.Api.Application.Mapper;
+using ms_notification.Api.Application.Dto.Response;
+using ms_notification.Api.Application.Dto.Request;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -70,7 +73,8 @@ public class ProcessScanServiceTests
             _context, _publisher, _routes, _family, _students, _signer,
             Options.Create(new ScanWindowOptions()),
             _clock,
-            NullLogger<ProcessScanService>.Instance);
+            NullLogger<ProcessScanService>.Instance,
+            new ScanResponseMapper());
 
         // Default, happy-path world: the driver is on a trip of the student's route,
         // the student has an assigned stop with a known location, and the family
@@ -88,8 +92,8 @@ public class ProcessScanServiceTests
 
     private string ValidToken() => _signer.Issue(_studentId, "Juan Pérez", _routeId, _routeStopId).Token;
 
-    private Task<ScanResponseDto> Scan(BoardingType type) =>
-        _service.ExecuteAsync(_driverId, new ScanRequestDto
+    private Task<ProcessScanResponse> Scan(BoardingType type) =>
+        _service.ExecuteAsync(_driverId, new ProcessScanRequest
         {
             QrToken = ValidToken(),
             BoardingType = type
@@ -313,7 +317,7 @@ public class ProcessScanServiceTests
     public void AnUnknownBoardingTypeIsRejected()
     {
         var ex = Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.ExecuteAsync(_driverId, new ScanRequestDto
+            _service.ExecuteAsync(_driverId, new ProcessScanRequest
             {
                 QrToken = ValidToken(),
                 BoardingType = (BoardingType)99
@@ -326,7 +330,7 @@ public class ProcessScanServiceTests
     public void AnInvalidQrCredentialIsRejected()
     {
         var ex = Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.ExecuteAsync(_driverId, new ScanRequestDto
+            _service.ExecuteAsync(_driverId, new ProcessScanRequest
             {
                 QrToken = "not-a-signed-token",
                 BoardingType = BoardingType.ON_BOARD

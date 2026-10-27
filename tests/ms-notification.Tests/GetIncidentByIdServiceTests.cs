@@ -40,12 +40,8 @@ public class GetIncidentByIdServiceTests
             RouteByExecutionId = new RouteInfo(_tripId, "Ruta Mañana")
         };
 
-        // Mismo profile que en producción: IncidentProfile, el único perfil que
-        // mapea Alert -> IncidentListDto.
-        var mapper = new MapperConfiguration(
-            cfg => cfg.AddProfile<IncidentProfile>(), NullLoggerFactory.Instance).CreateMapper();
-
-        _service = new GetIncidentByIdService(_context, _routes, mapper);
+        // Mismo mapper que en produccion: IncidentMapper (Alert -> IncidentListResponse).
+        _service = new GetIncidentByIdService(_context, _routes, new IncidentMapper());
     }
 
     [TearDown]

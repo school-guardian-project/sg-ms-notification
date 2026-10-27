@@ -117,7 +117,8 @@ public class GetAlertsService : IGetAlertsUseCase
             var student = await _studentDirectory.GetStudentByProfileIdAsync(alert.ProfileId, ct);
             var route = await _routeDirectory.GetRouteByExecutionIdAsync(alert.RouteExecutionId, ct);
 
-            alertDtos.Add(_alertMapper.ToListResponse(alert, student, route));
+            alertDtos.Add(_alertMapper.ToListResponse(
+                alert, student, route, types.GetValueOrDefault(alert.AlertTypeId)));
         }
 
         return new AlertsResponse(
