@@ -53,9 +53,12 @@ public class GetAlertsService : IGetAlertsUseCase
         // Filtrar por tipo de alerta
         if (filters.AlertTypeId.HasValue)
         {
-            // alertType=ON_BOARD/OFF_BOARD son los ids de escaneo 25/26
-            // (007-insert-boarding-alert-types.sql); 1 y 2 del catalogo son
-            // 'Bus Delay' y 'Route Deviation'.
+            // alertTypeId se pasa directamente como byte (25=Boarding, 26=Alighting)
+            query = query.Where(a => a.AlertTypeId == filters.AlertTypeId.Value);
+        }
+        else if (filters.AlertType.HasValue)
+        {
+            // Fallback: convertir BoardingType a byte
             var scanAlertTypeId = filters.AlertType.Value == BoardingType.ON_BOARD
                 ? (byte)25
                 : (byte)26;
