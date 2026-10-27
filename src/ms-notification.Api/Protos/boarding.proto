@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+// Contrato v1 del servicio de embarques (package boarding) que ms-notification
+// expone por gRPC: consultas de conteo de embarques/desembarques por viaje y
+// parada de ruta.
+// ms-route consume este contrato para obtener conteos OFF_BOARD y determinar
+// condiciones de fin de viaje (FR-5.x).
+option csharp_namespace = "ms_notification.Api.Infrastructure.Grpc";
+package boarding;
+
+service BoardingService {
+  // Obtiene el conteo de estudiantes que han descendido (OFF_BOARD) en una
+  // parada específica de un viaje (route_execution_id).
+  rpc GetAlightedCountAtStop (GetAlightedCountAtStopRequest) returns (GetAlightedCountAtStopResponse);
+}
+
+message GetAlightedCountAtStopRequest {
+  string trip_id = 1;        // route_execution_id (UUID)
+  string route_stop_id = 2;  // route_stop_id (UUID)
+}
+
+message GetAlightedCountAtStopResponse {
+  int32 count = 1;           // número de desembarques OFF_BOARD
+}

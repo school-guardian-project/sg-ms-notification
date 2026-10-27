@@ -1,5 +1,6 @@
 using ms_notification.Api.Infrastructure.Auth;
 using ms_notification.Api.Infrastructure.DependencyInjection;
+using ms_notification.Api.Infrastructure.Grpc;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 using Scalar.AspNetCore;
@@ -8,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddGrpc();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -66,5 +68,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization(); 
 app.MapControllers();
+app.MapGrpcService<BoardingGrpcService>();
 
 app.Run();
