@@ -1,4 +1,4 @@
-# sg-ms-notification
+# Servicio Notification
 
 Notification microservice for School Guardian. Handles administrator dashboard alerts, alert types, and notification persistence with pagination and filtering by school scope. Built with .NET.
 
