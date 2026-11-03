@@ -1,28 +1,61 @@
-# sg-ms-notification
-## Administrator dashboard alerts
+# Servicio Notification
 
-`GET /api/v1/notifications/alerts` reads persisted alerts. Administrators (role 1)
-are restricted using their authenticated `sub` and active `School.SchoolAdmin`
-assignments. Alerts belong to the school of their profile's campus; this scope
-is applied before filtering, counting and pagination. A missing administrator
-profile is rejected. Superadministrators retain global access.
+Notification microservice for School Guardian. Handles administrator dashboard alerts, alert types, and notification persistence with pagination and filtering by school scope. Built with .NET.
 
-Optional query parameters: `schoolId` (only narrows the authorized scope),
-`alertTypeId` (the actual catalog ID), `search` (description), `page` (zero-based),
-`size` (1-100), `sort` (`timestamp,asc` or `timestamp,desc`), `acknowledged`,
-`dateFrom` and `dateTo`. Legacy `alertType=ON_BOARD|OFF_BOARD` remains supported.
-List entries include `alertTypeId` and `alertTypeName`.
+## Getting Started
 
-`GET /api/v1/notifications/alert-types` returns distinct `{id,name}` catalog
-entries only for types used by persisted alerts in the authorized school scope.
-Unused catalog types and types used only by another school are excluded.
-Administrators use the same active school assignments as the alert list; the
-optional `schoolId` parameter can only narrow that scope. Superadministrators
-see types used across schools unless `schoolId` is supplied. Options are
-independent of text filters and pagination; no alerts means an empty type list.
+These instructions will give you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on deploying the project on a live system.
 
-Docker Compose defaults the required gRPC directories to `ms-route:5001` and
-`ms-user-management:5001` on `sg-services-network`. Override
-`Grpc__Route__Address` / `Grpc__Family__Address` in the environment when deploying
-those services elsewhere. SQL Server and the directories must be running before
-testing the populated alert list.
+### Prerequisites
+
+Requirements for the software and other tools to build, test and push:
+
+- .NET SDK
+- Docker
+- Docker Compose
+- The `sg-services-network` Docker network (external, shared across services)
+
+### Installing
+
+A step by step series of examples that tell you how to get a development environment running.
+
+Create the external network if it does not exist:
+
+    docker network create sg-services-network
+
+Start the service:
+
+    docker compose up -d
+
+The API listens on port 8080 (mapped to 8081 on the host). gRPC addresses for `ms-route` and `ms-user-management` are configured via environment variables with sensible defaults. Environment variables are loaded from `.env`.
+
+## Running the tests
+
+Explain how to run the automated tests for this system.
+
+### Sample Tests
+
+Tests are executed against the test service that runs in Docker Compose for each service:
+
+    docker compose --profile tests run ms-notification.tests
+
+### Style test
+
+Checks if the best practices and the right coding style has been used, validated through the test service in Docker Compose.
+
+## Deployment
+
+Deployment is performed via GitHub Actions to an AWS EC2 instance.
+
+## Built With
+
+- .NET
+- Docker Compose — Local development stack
+
+## Contributing
+
+Please read [CONTRIBUTING.md](https://github.com/school-guardian-project/.github/blob/main/CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+## License
+
+This project is licensed under the SCHOOL GUARDIAN PROPRIETARY SOFTWARE LICENSE Version 1.0 — 2026. See the [LICENSE](LICENSE) file for details.
